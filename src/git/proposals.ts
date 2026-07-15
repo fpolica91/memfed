@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { rmSync } from "node:fs";
 import { join } from "node:path";
 import type { Ctx } from "../cli/util.js";
@@ -119,4 +120,39 @@ export function mergeProposal(ctx: Ctx, space: Space, proposal: RemoteProposal):
 export function rejectProposal(ctx: Ctx, space: Space, recordId: string): void {
   git(["push", "-q", "origin", `:${PROPOSAL_REF_PREFIX}${recordId}`], { cwd: space.dir });
   appendAudit({ action: "reject", record_id: recordId, space: space.name }, ctx.paths.auditPath);
+}
+
+/**
+ * Forge sugar (RFC §7.5): when the remote is GitHub and `gh` is available,
+ * open a PR for the proposal branch so review can happen in the forge UI.
+ * Pure convenience — the branch flow above is the real mechanism.
+ */
+export function tryCreateForgePr(space: Space, record: MemoryRecord): string | undefined {
+  const url = git(["remote", "get-url", "origin"], { cwd: space.dir, check: false }).stdout.trim();
+  if (!/github\.com/.test(url)) return undefined;
+  try {
+    execFileSync("which", ["gh"], { stdio: ["ignore", "ignore", "ignore"] });
+  } catch {
+    return undefined;
+  }
+  try {
+    const title = record.fm.title.replace(/\s+/g, " ").slice(0, 72);
+    const out = execFileSync(
+      "gh",
+      [
+        "pr",
+        "create",
+        "--head",
+        proposalBranch(record.fm.id),
+        "--title",
+        `memfed: propose ${record.fm.id.slice(0, 10)} — ${title}`,
+        "--body",
+        `Proposed memory record \`${record.fm.id}\` ([${record.fm.type}] by ${record.fm.provenance.author}).\n\nApprove with \`memfed approve ${record.fm.id.slice(0, 10)} --space ${space.name}\` or merge here.`,
+      ],
+      { cwd: space.dir, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+    );
+    return out.trim().split("\n").pop();
+  } catch {
+    return undefined; // sugar never fails the publish flow
+  }
 }

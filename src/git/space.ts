@@ -70,12 +70,28 @@ export function initSpace(paths: Paths, config: Config, input: InitSpaceInput): 
 
   mkdirSync(join(dir, ".memfed"), { recursive: true });
   mkdirSync(join(dir, "records"), { recursive: true });
+  mkdirSync(join(dir, ".github", "workflows"), { recursive: true });
   writeFileSync(join(dir, MANIFEST_PATH), stringifyYaml(manifest, { lineWidth: 0 }));
   writeFileSync(
     join(dir, ".memfed", "lint-allow"),
     "# ruleId:fingerprint entries accepted by reviewers\n",
   );
   writeFileSync(join(dir, "records", ".gitkeep"), "");
+  // CI backstop (RFC §3): re-scan every record server-side on push/PR.
+  writeFileSync(
+    join(dir, ".github", "workflows", "memfed-lint.yml"),
+    `name: memfed-lint
+on: [push, pull_request]
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npx --yes memfed lint-space
+`,
+  );
   writeFileSync(
     join(dir, "README.md"),
     `# ${input.name} — memfed space\n\nShared memory records for AI coding assistants.\nManaged by [memfed]; records live in \`records/\`, one fact per file.\nReadership of this repo = readership of these records.\n`,

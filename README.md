@@ -99,7 +99,7 @@ Works on Node ≥ 22.13 (`node:sqlite`) and Bun (`bun:sqlite`) through a driver 
 
 ## Status & roadmap
 
-Implemented: records/store/index, spaces, direct + PR publish flows, redaction gate, sync with TOFU pinning, MCP server (5 tools), AGENTS.md projections, connect (claude/codex/cursor/crush*), retract/supersede/quarantine, importers (claude-mem, claude-native), activity briefs.
-Not yet: presence *files* (opt-in layer 2 — activity is currently derived from git log only), `promote` as a dedicated verb (use `share` to the org space), `gh pr` sugar, space CI lint template, embeddings. See RFC-0001 §17.
+Implemented: records/store/index, spaces, direct + PR publish flows, redaction gate, sync with TOFU pinning, MCP server (5 tools), AGENTS.md projections, connect (claude/codex/cursor/crush\*, `--hook` for a SessionStart brief), retract/supersede/quarantine/`promote`/`gardening`, importers (claude-mem, claude-native), activity briefs **plus opt-in presence files** (`memfed presence set/show/off`, TTL'd, hour-rounded, history-squashable via `space prune-presence`), space-side CI lint (`memfed lint-space`, workflow shipped by `space init`), `gh pr` sugar on GitHub remotes.
+Not yet: embeddings, in-repo spaces (`root:` reserved), encrypted spaces (deliberately rejected for v1). See RFC-0001 §17.
 
 \* Crush stanza is spec-based but untested (not installed on the dev machine).

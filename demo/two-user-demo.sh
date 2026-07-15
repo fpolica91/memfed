@@ -158,9 +158,12 @@ if has_subcommand brief; then
     --paths 'src/billing/**' --body "Max 5 retries, 2^n seconds, jitter." 2>&1)
   BILLING_ID=$(printf '%s' "$OUT" | grep -oE 'created [A-Z0-9]{26}' | awk '{print $2}')
   alice share "$BILLING_ID" --to platform --yes >/dev/null
+  alice presence set --space platform --note "reworking billing retries this week" \
+    --areas billing --project payments-api >/dev/null
   bob sync >/dev/null
   OUT=$(bob brief --project payments-api --paths 'src/billing/**' 2>&1)
   assert_contains "$OUT" "alice" "bob's brief names alice in his areas"
+  assert_contains "$OUT" "reworking billing retries" "alice's opt-in presence note reaches bob's brief"
 else
   skip "brief phase ('memfed brief' not built yet — M5)"
 fi

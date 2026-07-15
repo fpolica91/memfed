@@ -6,7 +6,7 @@ import pc from "picocolors";
 import { appendAudit } from "../../core/audit.js";
 import { newId } from "../../core/ids.js";
 import { nowIso } from "../../core/types.js";
-import { pushProposalBranch } from "../../git/proposals.js";
+import { pushProposalBranch, tryCreateForgePr } from "../../git/proposals.js";
 import { commitAndPush, runRedactionGate } from "../../git/publish.js";
 import { loadSpace } from "../../git/space.js";
 import { CliError, type Ctx, openCtx, resolveId } from "../util.js";
@@ -144,6 +144,8 @@ export function registerShareCommands(program: Command): void {
                 `this space requires review: a maintainer publishes it with 'memfed approve ${id.slice(0, 10)} --space ${space.name}'`,
               ),
           );
+          const prUrl = tryCreateForgePr(space, record);
+          if (prUrl) console.log(`${pc.green("PR opened")}  ${prUrl}`);
           return;
         }
 

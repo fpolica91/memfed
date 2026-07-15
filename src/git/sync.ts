@@ -3,9 +3,11 @@ import { join } from "node:path";
 import type { Ctx } from "../cli/util.js";
 import { CliError } from "../cli/util.js";
 import { appendAudit } from "../core/audit.js";
+import { loadState, resolveAuthor, saveState } from "../core/config.js";
 import type { IndexDb } from "../core/index-db.js";
 import { parseRecord } from "../core/record.js";
 import { aheadCount, changedFiles, git, isAncestor, revParse, sleepJitter } from "./exec.js";
+import { hourRoundedNow, writePresence } from "./presence.js";
 import { getPin, indexedShaKey, pinSpace, reindexSpace, type Space } from "./space.js";
 
 export interface SyncResult {
@@ -73,8 +75,8 @@ export function syncSpace(
     if (rebase.code !== 0) {
       git(["rebase", "--abort"], { cwd: space.dir, check: false });
       throw new CliError(
-        `space '${space.name}': local commits conflict with remote — field-wise merge lands in M4; ` +
-          `inspect ${space.dir} manually for now`,
+        `space '${space.name}': local unpushed commits conflict with remote — ` +
+          `inspect ${space.dir} and resolve manually (automatic field-wise merge is on the roadmap)`,
       );
     }
     for (let attempt = 1; attempt <= 4; attempt++) {
@@ -120,6 +122,8 @@ export function syncSpace(
     }
   }
 
+  refreshAutoPresence(ctx, space);
+
   appendAudit(
     {
       action: "sync",
@@ -129,6 +133,31 @@ export function syncSpace(
     ctx.paths.auditPath,
   );
   return result;
+}
+
+const AUTO_PRESENCE_MIN_INTERVAL_MS = 4 * 3_600_000;
+
+/** Standing-consent auto refresh (RFC §9): re-push the SAME entry, new hour-rounded timestamp. */
+function refreshAutoPresence(ctx: Ctx, space: Space): void {
+  const state = loadState(ctx.paths);
+  const p = state.presence[space.name];
+  if (!p || p.mode !== "auto" || !p.note) return;
+  if (p.lastPush && Date.now() - Date.parse(p.lastPush) < AUTO_PRESENCE_MIN_INTERVAL_MS) return;
+  try {
+    writePresence(ctx.paths, space, {
+      author: resolveAuthor(ctx.config),
+      name: resolveAuthor(ctx.config),
+      project: p.project,
+      areas: p.areas ?? [],
+      note: p.note,
+      updated: hourRoundedNow(),
+      ttl_hours: p.ttlHours ?? 24,
+    });
+    p.lastPush = new Date().toISOString();
+    saveState(state, ctx.paths);
+  } catch {
+    /* presence refresh is best-effort; sync must not fail on it */
+  }
 }
 
 function applyDiffToIndex(

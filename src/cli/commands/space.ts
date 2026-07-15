@@ -61,6 +61,21 @@ export function registerSpaceCommands(program: Command): void {
     });
 
   space
+    .command("prune-presence")
+    .description("squash the presence branch to one fresh commit (erases update history — RFC §9)")
+    .requiredOption("--space <name>")
+    .action(async (opts) => {
+      await withCtx(async (ctx) => {
+        const { prunePresence } = await import("../../git/presence.js");
+        const s = loadSpace(ctx.paths, ctx.config, opts.space);
+        const kept = prunePresence(ctx.paths, s);
+        console.log(
+          `${pc.green("pruned")} presence history on '${opts.space}' — ${kept} unexpired entr${kept === 1 ? "y" : "ies"} kept`,
+        );
+      });
+    });
+
+  space
     .command("list")
     .description("list joined spaces")
     .action(async () => {

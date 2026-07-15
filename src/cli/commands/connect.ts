@@ -71,6 +71,48 @@ function mergeMcpJson(file: string, spec: { command: string; args: string[] }): 
   writeFileSync(file, `${JSON.stringify(obj, null, 2)}\n`);
 }
 
+/**
+ * Project-scoped Claude Code SessionStart hook: stdout of the command is added
+ * to session context, so the collision brief becomes ambient (RFC §12 stretch).
+ */
+function writeSessionStartHook(
+  projectDir: string,
+  spec: { command: string; args: string[] },
+): string {
+  const settingsDir = join(projectDir, ".claude");
+  mkdirSync(settingsDir, { recursive: true });
+  const file = join(settingsDir, "settings.json");
+  let settings: {
+    hooks?: Record<
+      string,
+      Array<{ matcher?: string; hooks: Array<{ type: string; command: string }> }>
+    >;
+  } = {};
+  if (existsSync(file)) {
+    try {
+      settings = JSON.parse(readFileSync(file, "utf8"));
+    } catch (e) {
+      throw new CliError(`${file} is not valid JSON: ${(e as Error).message}`);
+    }
+  }
+  const briefArgs = [...spec.args.slice(0, -1), "brief"]; // same launcher, 'brief' verb
+  const command = [spec.command, ...briefArgs]
+    .map((p) => (p.includes(" ") ? `"${p}"` : p))
+    .join(" ");
+  settings.hooks ??= {};
+  settings.hooks.SessionStart ??= [];
+  const already = settings.hooks.SessionStart.some((entry) =>
+    entry.hooks?.some((h) => h.command?.includes("brief")),
+  );
+  if (!already)
+    settings.hooks.SessionStart.push({
+      matcher: "startup|resume|clear",
+      hooks: [{ type: "command", command }],
+    });
+  writeFileSync(file, `${JSON.stringify(settings, null, 2)}\n`);
+  return file;
+}
+
 function doRender(
   ctx: Ctx,
   marker: ResolvedProject,
@@ -93,6 +135,7 @@ export function registerConnectCommands(program: Command): void {
     .description("Claude Code: project .mcp.json + AGENTS.md managed block")
     .option("--project <dir>", "project directory", ".")
     .option("--claude-md", "also render a managed block into CLAUDE.md")
+    .option("--hook", "add a SessionStart hook that injects 'memfed brief' as context")
     .action(async (opts) => {
       await withCtx((ctx) => {
         const marker = requireMarker(resolve(opts.project));
@@ -103,6 +146,12 @@ export function registerConnectCommands(program: Command): void {
         );
         registerProject(ctx, marker, opts.claudeMd);
         doRender(ctx, marker, { claudeMd: opts.claudeMd });
+        if (opts.hook) {
+          const file = writeSessionStartHook(marker.dir, spec);
+          console.log(
+            `${pc.green("wrote")}     ${file} ${pc.dim("(SessionStart hook: brief injected at session start)")}`,
+          );
+        }
         console.log(
           pc.dim("Claude Code will prompt to trust the project MCP server on next start."),
         );

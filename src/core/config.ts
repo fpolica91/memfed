@@ -24,11 +24,21 @@ export interface Config {
   importMaps?: { claudeMem?: Record<string, string> };
 }
 
+export interface PresenceState {
+  mode: "on" | "off" | "auto";
+  lastPush?: string;
+  /** The standing consent's exact content — re-pushed on auto refresh. */
+  note?: string;
+  areas?: string[];
+  project?: string;
+  ttlHours?: number;
+}
+
 /** Machine state, kept out of the user-editable config (atomic writes). */
 export interface State {
   /** TOFU pins: space name -> last-seen origin/main commit (RFC §8). */
   pins: Record<string, string>;
-  presence: Record<string, { mode: "on" | "off" | "auto"; lastPush?: string }>;
+  presence: Record<string, PresenceState>;
   /** Local kill-switch (RFC §16 T2): record ids excluded from briefs/projections/search. */
   quarantined?: string[];
 }
