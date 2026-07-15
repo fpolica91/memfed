@@ -18,7 +18,14 @@ export interface AuthorActivity {
 
 export function spaceActivity(space: Space, days = 14): AuthorActivity[] {
   const log = git(
-    ["log", `--since=${days}.days`, "--pretty=%x01%ae%x02%an%x02%at", "--name-only", "--", "records/"],
+    [
+      "log",
+      `--since=${days}.days`,
+      "--pretty=%x01%ae%x02%an%x02%at",
+      "--name-only",
+      "--",
+      "records/",
+    ],
     { cwd: space.dir, check: false },
   );
   if (log.code !== 0) return [];
@@ -33,7 +40,12 @@ export function spaceActivity(space: Space, days = 14): AuthorActivity[] {
         current = existing;
         if (iso > existing.lastSeen) existing.lastSeen = iso;
       } else {
-        current = { author: name ?? email ?? "unknown", email: email ?? "", lastSeen: iso, recordIds: [] };
+        current = {
+          author: name ?? email ?? "unknown",
+          email: email ?? "",
+          lastSeen: iso,
+          recordIds: [],
+        };
         byEmail.set(email ?? "", current);
       }
     } else if (current && line.startsWith("records/") && line.endsWith(".md")) {
@@ -128,7 +140,10 @@ export function composeBrief(input: BriefInput): string {
   if (recent.length > 0)
     sections.push(
       `recent records${input.project ? ` in ${input.project}` : ""}:\n${recent
-        .map((r) => `- [${r.type}] ${r.title} — ${r.author}, ${r.created.slice(0, 10)} (${r.id.slice(0, 10)})`)
+        .map(
+          (r) =>
+            `- [${r.type}] ${r.title} — ${r.author}, ${r.created.slice(0, 10)} (${r.id.slice(0, 10)})`,
+        )
         .join("\n")}`,
     );
 

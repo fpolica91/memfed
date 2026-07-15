@@ -138,6 +138,36 @@ export function registerConnectCommands(program: Command): void {
     });
 
   connect
+    .command("crush")
+    .description("Crush (EXPERIMENTAL): project crush.json mcp entry + AGENTS.md managed block")
+    .option("--project <dir>", "project directory", ".")
+    .action(async (opts) => {
+      await withCtx((ctx) => {
+        const marker = requireMarker(resolve(opts.project));
+        const spec = mcpServerSpec();
+        const file = join(marker.dir, "crush.json");
+        let obj: { mcp?: Record<string, unknown> } = {};
+        if (existsSync(file)) {
+          try {
+            obj = JSON.parse(readFileSync(file, "utf8"));
+          } catch (e) {
+            throw new CliError(`${file} is not valid JSON: ${(e as Error).message}`);
+          }
+        }
+        obj.mcp = {
+          ...obj.mcp,
+          memfed: { type: "stdio", command: spec.command, args: spec.args },
+        };
+        writeFileSync(file, `${JSON.stringify(obj, null, 2)}\n`);
+        console.log(
+          `${pc.green("wrote")}     ${file} ${pc.yellow("(experimental — Crush is not installed on this machine; stanza is spec-based, verify against Crush docs)")}`,
+        );
+        registerProject(ctx, marker);
+        doRender(ctx, marker, {});
+      });
+    });
+
+  connect
     .command("cursor")
     .description("Cursor: project .cursor/mcp.json + AGENTS.md managed block")
     .option("--project <dir>", "project directory", ".")

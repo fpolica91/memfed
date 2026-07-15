@@ -1,0 +1,70 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: git config --global user.name ci && git config --global user.email ci@memfed.test
+      - run: npm ci
+      - run: npm test
+
+  bun-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci
+      - run: bun src/cli/index.ts --version
+      - run: |
+          export MEMFED_HOME="$RUNNER_TEMP/bun-home"
+          bun src/cli/index.ts init
+          bun src/cli/index.ts add --project ci --type decision --title "bun smoke" --body "bun:sqlite seam works"
+          bun src/cli/index.ts search "bun smoke" | grep -q "bun smoke"
+
+  pack-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci
+      - run: npm run build
+      - run: npm pack
+      - run: |
+          export MEMFED_HOME="$RUNNER_TEMP/pack-home"
+          npx --yes ./memfed-*.tgz doctor || true
+          npx --yes ./memfed-*.tgz init
+          npx --yes ./memfed-*.tgz --version
+
+  demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: git config --global user.name ci && git config --global user.email ci@memfed.test
+      - run: npm ci
+      - run: ./demo/two-user-demo.sh --cli-only --isolated --clean

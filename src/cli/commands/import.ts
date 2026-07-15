@@ -24,15 +24,20 @@ function parseMaps(values: string[]): Record<string, string> {
   return map;
 }
 
-function report(what: string, r: { imported: number; skippedDuplicates: number; skippedInvalid: number; total: number }): void {
+function report(
+  what: string,
+  r: { imported: number; skippedDuplicates: number; skippedInvalid: number; total: number },
+): void {
   console.log(
     `${pc.green("imported")} ${r.imported}/${r.total} ${what} record(s) as private candidates` +
-      pc.dim(
-        ` (${r.skippedDuplicates} duplicate(s), ${r.skippedInvalid} invalid skipped)`,
-      ),
+      pc.dim(` (${r.skippedDuplicates} duplicate(s), ${r.skippedInvalid} invalid skipped)`),
   );
   if (r.imported > 0)
-    console.log(pc.dim("triage them with 'memfed list --status candidate' and 'memfed review' after proposing"));
+    console.log(
+      pc.dim(
+        "triage them with 'memfed list --status candidate' and 'memfed review' after proposing",
+      ),
+    );
 }
 
 export function registerImportCommands(program: Command): void {

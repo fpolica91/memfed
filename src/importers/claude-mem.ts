@@ -57,7 +57,10 @@ interface ObservationRow {
 }
 
 function slugify(name: string): string {
-  const slug = name.toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^[-.]+|[-.]+$/g, "");
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/^[-.]+|[-.]+$/g, "");
   return slug || "unknown";
 }
 
@@ -86,7 +89,10 @@ function epochToIso(epoch: number | null): string {
 /** Open the source db read-only; on a hard lock, snapshot db(+wal/shm) and read the copy. */
 async function openSource(dbPath: string, tmpDir: string) {
   try {
-    return { db: await openDb(dbPath, { readOnly: true }), snapshot: undefined as string | undefined };
+    return {
+      db: await openDb(dbPath, { readOnly: true }),
+      snapshot: undefined as string | undefined,
+    };
   } catch {
     mkdirSync(tmpDir, { recursive: true });
     const snap = join(tmpDir, `claude-mem-snapshot-${process.pid}.db`);
@@ -104,11 +110,12 @@ export async function importClaudeMem(
 ): Promise<ImportResult> {
   const dbPath = opts.dbPath ?? CLAUDE_MEM_DEFAULT_DB;
   if (!existsSync(dbPath)) throw new Error(`claude-mem database not found at ${dbPath}`);
-  const types = opts.types?.includes("all")
-    ? Object.keys(TYPE_MAP)
-    : (opts.types ?? ["decision"]);
+  const types = opts.types?.includes("all") ? Object.keys(TYPE_MAP) : (opts.types ?? ["decision"]);
   for (const t of types)
-    if (!TYPE_MAP[t]) throw new Error(`unknown claude-mem type '${t}' (known: ${Object.keys(TYPE_MAP).join(", ")}, all)`);
+    if (!TYPE_MAP[t])
+      throw new Error(
+        `unknown claude-mem type '${t}' (known: ${Object.keys(TYPE_MAP).join(", ")}, all)`,
+      );
 
   const tmpDir = join(store.paths.home, "tmp");
   const { db, snapshot } = await openSource(dbPath, tmpDir);
@@ -137,7 +144,8 @@ export async function importClaudeMem(
       const tags = [`cm:${row.type}`];
       try {
         const concepts = row.concepts ? JSON.parse(row.concepts) : [];
-        if (Array.isArray(concepts)) tags.push(...concepts.slice(0, 6).map((c: unknown) => slugify(String(c))));
+        if (Array.isArray(concepts))
+          tags.push(...concepts.slice(0, 6).map((c: unknown) => slugify(String(c))));
       } catch {
         /* concepts unparseable — fine */
       }
@@ -148,7 +156,11 @@ export async function importClaudeMem(
           title: title ?? body.split("\n")[0]?.slice(0, 120) ?? "untitled",
           type: TYPE_MAP[row.type] as RecordType,
           project,
-          provenance: { author, tool: "import:claude-mem", created: epochToIso(row.created_at_epoch) },
+          provenance: {
+            author,
+            tool: "import:claude-mem",
+            created: epochToIso(row.created_at_epoch),
+          },
           status: "candidate" as const,
           schema_version: 1 as const,
         },

@@ -33,7 +33,10 @@ export async function openDb(file: string, opts: OpenDbOptions = {}): Promise<Db
 }
 
 async function openNodeDb(file: string, opts: OpenDbOptions): Promise<Db> {
-  const { DatabaseSync } = await import("node:sqlite");
+  // Non-literal specifier: esbuild's builtin list predates node:sqlite and
+  // rewrites a literal import to a bare 'sqlite' package, breaking the bundle.
+  const specifier = "node:sqlite";
+  const { DatabaseSync } = (await import(specifier)) as typeof import("node:sqlite");
   if (opts.readOnly) {
     const db = new DatabaseSync(file, { readOnly: true });
     db.exec("PRAGMA busy_timeout = 3000");

@@ -37,9 +37,42 @@ async function buildClaudeMemFixture(file: string): Promise<void> {
     "INSERT INTO observations (project, merged_into_project, title, subtitle, text, narrative, facts, concepts, type, created_at_epoch) VALUES (?,?,?,?,?,?,?,?,?,?)",
   );
   // 1784073600 = 2026-07-15T00:00:00Z
-  ins.run("Harness", null, "Use ULIDs for run ids", "sortable ids", "ULIDs everywhere.", "We standardized on ULIDs for run identifiers.", '["ULIDs sort by time"]', '["ids"]', "decision", 1784073600);
-  ins.run("harness", "harness", "Fix flaky retry test", null, "Retry test raced the clock.", null, null, null, "bugfix", 1784073700);
-  ins.run("other-proj", null, "Explored the scheduler", null, "Notes about scheduler internals.", null, null, null, "discovery", 1784073800);
+  ins.run(
+    "Harness",
+    null,
+    "Use ULIDs for run ids",
+    "sortable ids",
+    "ULIDs everywhere.",
+    "We standardized on ULIDs for run identifiers.",
+    '["ULIDs sort by time"]',
+    '["ids"]',
+    "decision",
+    1784073600,
+  );
+  ins.run(
+    "harness",
+    "harness",
+    "Fix flaky retry test",
+    null,
+    "Retry test raced the clock.",
+    null,
+    null,
+    null,
+    "bugfix",
+    1784073700,
+  );
+  ins.run(
+    "other-proj",
+    null,
+    "Explored the scheduler",
+    null,
+    "Notes about scheduler internals.",
+    null,
+    null,
+    null,
+    "discovery",
+    1784073800,
+  );
   db.close();
 }
 

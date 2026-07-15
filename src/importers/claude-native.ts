@@ -30,7 +30,10 @@ export interface ClaudeNativeImportOptions {
 }
 
 function slugify(name: string): string {
-  const slug = name.toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^[-.]+|[-.]+$/g, "");
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/^[-.]+|[-.]+$/g, "");
   return slug || "unknown";
 }
 
