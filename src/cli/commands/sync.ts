@@ -50,6 +50,21 @@ export function registerSyncCommand(program: Command): void {
             console.error(pc.red(`sync ${name} failed: ${(e as Error).message}`));
           }
         }
+        // Refresh projections for registered projects (best effort, RFC §10).
+        const { renderProject } = await import("../../render/targets.js");
+        for (const [slug, entry] of Object.entries(ctx.config.projects)) {
+          if (!existsSync(entry.dir)) continue;
+          try {
+            const results = renderProject(ctx.index, entry.dir, slug, entry.spaces, {
+              claudeMd: entry.claudeMd,
+            });
+            for (const r of results)
+              if (r.action !== "unchanged")
+                console.log(pc.dim(`${r.action} projection: ${r.file}`));
+          } catch (e) {
+            console.error(pc.yellow(`projection ${slug}: ${(e as Error).message}`));
+          }
+        }
         if (failed) process.exitCode = 1;
       } finally {
         ctx.close();

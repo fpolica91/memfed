@@ -137,10 +137,13 @@ else
   fi
 
   if command -v codex >/dev/null 2>&1; then
-    step "codex registers the MCP server"
-    OUT=$(bob connect codex 2>&1) || skip "connect codex: $OUT"
-    OUT=$(CODEX_HOME="$DEMO_ROOT/bob-codex" bob connect codex 2>&1) || true
-    OUT=$(codex mcp list 2>&1 || true)
+    step "codex registers the MCP server (isolated CODEX_HOME — your real ~/.codex is untouched)"
+    BOB_CODEX="$DEMO_ROOT/bob-codex"
+    mkdir -p "$BOB_CODEX"
+    OUT=$(cd "$PROJECT_DIR" && CODEX_HOME="$BOB_CODEX" MEMFED_HOME="$BOB_HOME" \
+      GIT_CONFIG_GLOBAL="$BOB_GITCONFIG" NO_COLOR=1 $MEMFED_CMD connect codex --project . 2>&1)
+    assert_contains "$OUT" "registered" "memfed connect codex ran 'codex mcp add'"
+    OUT=$(CODEX_HOME="$BOB_CODEX" codex mcp list 2>&1 || true)
     assert_contains "$OUT" "memfed" "codex mcp list shows memfed"
   else
     skip "codex not on PATH"

@@ -1,7 +1,9 @@
 import { Command } from "commander";
 import pc from "picocolors";
 import { suppressSqliteExperimentalWarning } from "../core/db.js";
+import { registerConnectCommands } from "./commands/connect.js";
 import { registerDoctorCommand } from "./commands/doctor.js";
+import { registerMcpCommand } from "./commands/mcp.js";
 import { registerShareCommands } from "./commands/share.js";
 import { registerSpaceCommands } from "./commands/space.js";
 import { registerStoreCommands } from "./commands/store.js";
@@ -22,6 +24,8 @@ registerStoreCommands(program);
 registerSpaceCommands(program);
 registerShareCommands(program);
 registerSyncCommand(program);
+registerConnectCommands(program);
+registerMcpCommand(program);
 registerDoctorCommand(program);
 
 program.parseAsync(process.argv).catch((err: unknown) => {
