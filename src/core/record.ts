@@ -62,7 +62,8 @@ export function serializeRecord(record: MemoryRecord): string {
 
 /** Parse a record file. Unknown frontmatter fields are stripped (forward-compat, RFC §15). */
 export function parseRecord(text: string, file?: string): MemoryRecord {
-  if (!text.startsWith("---\n")) throw new RecordParseError("missing frontmatter opening '---'", file);
+  if (!text.startsWith("---\n"))
+    throw new RecordParseError("missing frontmatter opening '---'", file);
   const end = text.indexOf("\n---\n", 3);
   if (end === -1) throw new RecordParseError("missing frontmatter closing '---'", file);
   const yamlText = text.slice(4, end + 1);

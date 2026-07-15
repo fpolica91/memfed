@@ -61,10 +61,16 @@ const NEGATIVES: Array<{ name: string; text: string }> = [
   { name: "short git sha", text: "see commit 4f2c9b1 on main" },
   { name: "ULID", text: "record 01JZX5M8Q0V7T3E9RWN2K4YHBD supersedes it" },
   { name: "UUID", text: "session 550e8400-e29b-41d4-a716-446655440000 ended" },
-  { name: "prose", text: "We decided to rotate refresh tokens on every exchange after the incident." },
+  {
+    name: "prose",
+    text: "We decided to rotate refresh tokens on every exchange after the incident.",
+  },
   { name: "env placeholder", text: "set API_KEY=<your-api-key-here> in .env" },
   { name: "env var reference", text: "export DATABASE_PASSWORD=${DB_PASS}" },
-  { name: "sha256 mention", text: "digest sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" },
+  {
+    name: "sha256 mention",
+    text: "digest sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  },
   { name: "package versions", text: "typescript@7.0.2 vitest@4.1.10 commander@15.0.0" },
   { name: "markdown code", text: "run `npm install memfed` then `memfed init`" },
 ];
@@ -81,9 +87,10 @@ describe("redaction scan", () => {
   it("negatives corpus produces no blocks", () => {
     for (const n of NEGATIVES) {
       const result = scan(n.text);
-      expect(result.blocks, `false positive on '${n.name}': ${JSON.stringify(result.blocks)}`).toEqual(
-        [],
-      );
+      expect(
+        result.blocks,
+        `false positive on '${n.name}': ${JSON.stringify(result.blocks)}`,
+      ).toEqual([]);
     }
   });
 

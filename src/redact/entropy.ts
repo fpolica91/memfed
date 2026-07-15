@@ -38,11 +38,15 @@ export function findEntropyHits(text: string): EntropyHit[] {
     // Structured identifiers that merely look random:
     if (UUID_RE.test(token) || ULID_TOKEN_RE.test(token)) continue;
     // Pure hex without context is almost always a digest (git sha, sha256).
-    const context = text.slice(Math.max(0, index - CONTEXT_WINDOW), index + token.length + CONTEXT_WINDOW);
+    const context = text.slice(
+      Math.max(0, index - CONTEXT_WINDOW),
+      index + token.length + CONTEXT_WINDOW,
+    );
     const hasContext = CONTEXT_KEYWORD_RE.test(context);
     if (HEX_RE.test(token) && !hasContext) continue;
     const entropy = shannonEntropy(token);
-    if (hasContext && entropy >= 4.0) hits.push({ index, length: token.length, entropy, hasContext });
+    if (hasContext && entropy >= 4.0)
+      hits.push({ index, length: token.length, entropy, hasContext });
     else if (!hasContext && entropy >= 4.7 && token.length >= 32)
       hits.push({ index, length: token.length, entropy, hasContext });
   }

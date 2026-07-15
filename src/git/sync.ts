@@ -1,10 +1,10 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import type { Ctx } from "../cli/util.js";
+import { CliError } from "../cli/util.js";
 import { appendAudit } from "../core/audit.js";
 import type { IndexDb } from "../core/index-db.js";
 import { parseRecord } from "../core/record.js";
-import type { Ctx } from "../cli/util.js";
-import { CliError } from "../cli/util.js";
 import { aheadCount, changedFiles, git, isAncestor, revParse, sleepJitter } from "./exec.js";
 import { getPin, indexedShaKey, pinSpace, reindexSpace, type Space } from "./space.js";
 
@@ -20,8 +20,18 @@ export interface SyncResult {
  * Sync one space (RFC §8): fetch → TOFU pin check → rebase local commits →
  * push → incremental reindex from the pulled diff.
  */
-export function syncSpace(ctx: Ctx, space: Space, opts: { acceptRewrite?: boolean } = {}): SyncResult {
-  const result: SyncResult = { space: space.name, pulled: 0, removed: 0, pushed: false, errors: [] };
+export function syncSpace(
+  ctx: Ctx,
+  space: Space,
+  opts: { acceptRewrite?: boolean } = {},
+): SyncResult {
+  const result: SyncResult = {
+    space: space.name,
+    pulled: 0,
+    removed: 0,
+    pushed: false,
+    errors: [],
+  };
 
   git(["fetch", "-q", "origin"], { cwd: space.dir });
   const remoteMain = revParse(space.dir, "origin/main");
@@ -73,7 +83,8 @@ export function syncSpace(ctx: Ctx, space: Space, opts: { acceptRewrite?: boolea
         result.pushed = true;
         break;
       }
-      if (attempt === 4) throw new CliError(`space '${space.name}': push failed: ${push.stderr.trim()}`);
+      if (attempt === 4)
+        throw new CliError(`space '${space.name}': push failed: ${push.stderr.trim()}`);
       git(["fetch", "-q", "origin"], { cwd: space.dir });
       const retry = git(["rebase", "origin/main"], { cwd: space.dir, check: false });
       if (retry.code !== 0) {

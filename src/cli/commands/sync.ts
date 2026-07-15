@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import type { Command } from "commander";
 import pc from "picocolors";
 import { git } from "../../git/exec.js";
-import { loadSpace, spaceDir, type Space } from "../../git/space.js";
+import { loadSpace, type Space, spaceDir } from "../../git/space.js";
 import { syncSpace } from "../../git/sync.js";
 import { CliError, type Ctx, openCtx } from "../util.js";
 

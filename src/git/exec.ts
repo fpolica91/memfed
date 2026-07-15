@@ -16,6 +16,8 @@ export interface GitOptions {
   /** Throw GitError on nonzero exit (default true). */
   check?: boolean;
   env?: Record<string, string>;
+  /** Piped to git's stdin (e.g. hash-object --stdin). */
+  input?: string;
 }
 
 export interface GitResult {
@@ -33,7 +35,8 @@ export function git(args: string[], opts: GitOptions = {}): GitResult {
     const stdout = execFileSync("git", args, {
       cwd: opts.cwd,
       encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
+      stdio: [opts.input !== undefined ? "pipe" : "ignore", "pipe", "pipe"],
+      input: opts.input,
       env: { ...process.env, GIT_TERMINAL_PROMPT: "0", ...opts.env },
       maxBuffer: 32 * 1024 * 1024,
     });
@@ -57,7 +60,9 @@ export function revParse(cwd: string, ref: string): string | undefined {
 
 /** True when `ancestor` is an ancestor of (or equal to) `descendant`. */
 export function isAncestor(cwd: string, ancestor: string, descendant: string): boolean {
-  return git(["merge-base", "--is-ancestor", ancestor, descendant], { cwd, check: false }).code === 0;
+  return (
+    git(["merge-base", "--is-ancestor", ancestor, descendant], { cwd, check: false }).code === 0
+  );
 }
 
 export function aheadCount(cwd: string, upstream: string, branch = "HEAD"): number {
@@ -73,4 +78,23 @@ export function changedFiles(cwd: string, from: string, to: string): string[] {
 export function sleepJitter(attempt: number): void {
   const ms = 120 * attempt + Math.floor(Math.random() * 250);
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+/** Push main with the standard fetch/rebase/retry loop (RFC §8). */
+export function pushMainWithRetry(dir: string, what: string): void {
+  let lastError = "";
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    const push = git(["push", "-q", "origin", "main"], { cwd: dir, check: false });
+    if (push.code === 0) return;
+    lastError = push.stderr;
+    if (attempt === 4) break;
+    git(["fetch", "-q", "origin"], { cwd: dir });
+    const rebase = git(["rebase", "origin/main"], { cwd: dir, check: false });
+    if (rebase.code !== 0) {
+      git(["rebase", "--abort"], { cwd: dir, check: false });
+      throw new GitError(["push"], `rebase conflict while pushing ${what}`, 1);
+    }
+    sleepJitter(attempt);
+  }
+  throw new GitError(["push"], `push of ${what} failed after retries: ${lastError.trim()}`, 1);
 }

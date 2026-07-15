@@ -5,7 +5,9 @@ import { addSpace, getPin, initSpace, loadSpace, reindexSpace } from "../../git/
 import { type Ctx, openCtx } from "../util.js";
 
 function deriveName(url: string): string {
-  return basename(url).replace(/\.git$/, "").toLowerCase();
+  return basename(url)
+    .replace(/\.git$/, "")
+    .toLowerCase();
 }
 
 async function withCtx<T>(fn: (ctx: Ctx) => Promise<T> | T): Promise<T> {

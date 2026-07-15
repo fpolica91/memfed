@@ -1,12 +1,5 @@
 import { execFileSync } from "node:child_process";
-import {
-  chmodSync,
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  renameSync,
-  writeFileSync,
-} from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir, userInfo } from "node:os";
 import { dirname, join } from "node:path";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
@@ -36,6 +29,8 @@ export interface State {
   /** TOFU pins: space name -> last-seen origin/main commit (RFC §8). */
   pins: Record<string, string>;
   presence: Record<string, { mode: "on" | "off" | "auto"; lastPush?: string }>;
+  /** Local kill-switch (RFC §16 T2): record ids excluded from briefs/projections/search. */
+  quarantined?: string[];
 }
 
 export interface Paths {
@@ -110,7 +105,11 @@ export function loadState(paths = getPaths()): State {
   if (!existsSync(paths.statePath)) return { pins: {}, presence: {} };
   try {
     const raw = JSON.parse(readFileSync(paths.statePath, "utf8"));
-    return { pins: raw.pins ?? {}, presence: raw.presence ?? {} };
+    return {
+      pins: raw.pins ?? {},
+      presence: raw.presence ?? {},
+      quarantined: raw.quarantined ?? [],
+    };
   } catch {
     return { pins: {}, presence: {} };
   }
@@ -124,6 +123,11 @@ function atomicWrite(file: string, data: string, mode: number): void {
   const tmp = join(dirname(file), `.${Date.now()}-${process.pid}.tmp`);
   writeFileSync(tmp, data, { mode });
   renameSync(tmp, file);
+}
+
+/** Quarantined record ids (RFC §16 T2) as a fast lookup set. */
+export function quarantineSet(paths = getPaths()): Set<string> {
+  return new Set(loadState(paths).quarantined ?? []);
 }
 
 let cachedAuthor: string | undefined;

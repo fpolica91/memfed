@@ -71,10 +71,16 @@ function mergeMcpJson(file: string, spec: { command: string; args: string[] }): 
   writeFileSync(file, `${JSON.stringify(obj, null, 2)}\n`);
 }
 
-function doRender(ctx: Ctx, marker: ResolvedProject, opts: { claudeMd?: boolean; force?: boolean }) {
+function doRender(
+  ctx: Ctx,
+  marker: ResolvedProject,
+  opts: { claudeMd?: boolean; force?: boolean },
+) {
   const results = renderProject(ctx.index, marker.dir, marker.slug, marker.spaces, opts);
   for (const r of results)
-    console.log(`${pc.green(r.action.padEnd(9))} ${r.file}${r.action === "unchanged" ? pc.dim(" (up to date)") : ""}`);
+    console.log(
+      `${pc.green(r.action.padEnd(9))} ${r.file}${r.action === "unchanged" ? pc.dim(" (up to date)") : ""}`,
+    );
 }
 
 export function registerConnectCommands(program: Command): void {
@@ -92,10 +98,14 @@ export function registerConnectCommands(program: Command): void {
         const marker = requireMarker(resolve(opts.project));
         const spec = mcpServerSpec();
         mergeMcpJson(join(marker.dir, ".mcp.json"), spec);
-        console.log(`${pc.green("wrote")}     ${join(marker.dir, ".mcp.json")} ${pc.dim(`(${spec.command} ${spec.args.join(" ")})`)}`);
+        console.log(
+          `${pc.green("wrote")}     ${join(marker.dir, ".mcp.json")} ${pc.dim(`(${spec.command} ${spec.args.join(" ")})`)}`,
+        );
         registerProject(ctx, marker, opts.claudeMd);
         doRender(ctx, marker, { claudeMd: opts.claudeMd });
-        console.log(pc.dim("Claude Code will prompt to trust the project MCP server on next start."));
+        console.log(
+          pc.dim("Claude Code will prompt to trust the project MCP server on next start."),
+        );
       });
     });
 
@@ -111,7 +121,9 @@ export function registerConnectCommands(program: Command): void {
           execFileSync("codex", ["mcp", "add", "memfed", "--", spec.command, ...spec.args], {
             stdio: ["ignore", "pipe", "pipe"],
           });
-          console.log(`${pc.green("registered")} memfed with codex ${pc.dim("(codex mcp add — global config)")}`);
+          console.log(
+            `${pc.green("registered")} memfed with codex ${pc.dim("(codex mcp add — global config)")}`,
+          );
         } catch (e) {
           console.error(
             pc.yellow(

@@ -3,20 +3,12 @@ import { readFileSync } from "node:fs";
 import type { Command } from "commander";
 import pc from "picocolors";
 import { appendAudit } from "../../core/audit.js";
-import { ensureInit, getPaths } from "../../core/config.js";
+import { ensureInit, getPaths, quarantineSet } from "../../core/config.js";
 import { IndexDb, LOCAL_SOURCE } from "../../core/index-db.js";
 import { findProjectMarker } from "../../core/project.js";
 import { parseRecord } from "../../core/record.js";
 import { nowIso, RECORD_STATUSES, RECORD_TYPES, type RecordType } from "../../core/types.js";
-import {
-  CliError,
-  type Ctx,
-  formatRow,
-  openCtx,
-  parseCsv,
-  readStdin,
-  resolveId,
-} from "../util.js";
+import { CliError, type Ctx, formatRow, openCtx, parseCsv, readStdin, resolveId } from "../util.js";
 
 async function withCtx<T>(fn: (ctx: Ctx) => Promise<T> | T): Promise<T> {
   const ctx = await openCtx();
@@ -103,13 +95,16 @@ export function registerStoreCommands(program: Command): void {
     .option("-n, --limit <n>", "max rows", "50")
     .action(async (opts) => {
       await withCtx((ctx) => {
-        const rows = ctx.index.search({
-          project: opts.project,
-          type: opts.type,
-          status: opts.status,
-          space: opts.space,
-          limit: Number(opts.limit),
-        });
+        const quarantined = quarantineSet(ctx.paths);
+        const rows = ctx.index
+          .search({
+            project: opts.project,
+            type: opts.type,
+            status: opts.status,
+            space: opts.space,
+            limit: Number(opts.limit),
+          })
+          .filter((r) => !quarantined.has(r.id));
         if (rows.length === 0) {
           console.log(pc.dim("no records"));
           return;
@@ -146,13 +141,16 @@ export function registerStoreCommands(program: Command): void {
     .option("-n, --limit <n>", "max results", "20")
     .action(async (queryParts: string[], opts) => {
       await withCtx((ctx) => {
-        const rows = ctx.index.search({
-          query: queryParts.join(" "),
-          project: opts.project,
-          type: opts.type,
-          space: opts.space,
-          limit: Number(opts.limit),
-        });
+        const quarantined = quarantineSet(ctx.paths);
+        const rows = ctx.index
+          .search({
+            query: queryParts.join(" "),
+            project: opts.project,
+            type: opts.type,
+            space: opts.space,
+            limit: Number(opts.limit),
+          })
+          .filter((r) => !quarantined.has(r.id));
         if (rows.length === 0) {
           console.log(pc.dim("no matches"));
           return;
@@ -173,7 +171,9 @@ export function registerStoreCommands(program: Command): void {
       await withCtx(async (ctx) => {
         const id = resolveId(ctx, idArg);
         if (!ctx.store.exists(id))
-          throw new CliError(`record ${id} is not in the private store (space records are edited via supersede/retract)`);
+          throw new CliError(
+            `record ${id} is not in the private store (space records are edited via supersede/retract)`,
+          );
         const bodyChange = opts.bodyFile !== undefined;
         const titleChange = opts.title !== undefined;
         if (ctx.store.isPublished(id) && (bodyChange || titleChange))

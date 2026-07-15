@@ -167,7 +167,10 @@ export function scan(text: string, opts: ScanOptions = {}): ScanResult {
   const allowed = new Set((opts.allow ?? []).map((a) => `${a.ruleId}:${a.fingerprint}`));
   const kept = findings
     .filter((f) => !allowed.has(`${f.ruleId}:${f.fingerprint}`))
-    .sort((a, b) => a.index - b.index || (a.severity === b.severity ? 0 : a.severity === "block" ? -1 : 1));
+    .sort(
+      (a, b) =>
+        a.index - b.index || (a.severity === b.severity ? 0 : a.severity === "block" ? -1 : 1),
+    );
   const deduped: Finding[] = [];
   for (const f of kept) {
     const prev = deduped[deduped.length - 1];

@@ -3,7 +3,9 @@ import pc from "picocolors";
 import { suppressSqliteExperimentalWarning } from "../core/db.js";
 import { registerConnectCommands } from "./commands/connect.js";
 import { registerDoctorCommand } from "./commands/doctor.js";
+import { registerLifecycleCommands } from "./commands/lifecycle.js";
 import { registerMcpCommand } from "./commands/mcp.js";
+import { registerReviewCommands } from "./commands/review.js";
 import { registerShareCommands } from "./commands/share.js";
 import { registerSpaceCommands } from "./commands/space.js";
 import { registerStoreCommands } from "./commands/store.js";
@@ -23,6 +25,8 @@ const program = new Command("memfed")
 registerStoreCommands(program);
 registerSpaceCommands(program);
 registerShareCommands(program);
+registerReviewCommands(program);
+registerLifecycleCommands(program);
 registerSyncCommand(program);
 registerConnectCommands(program);
 registerMcpCommand(program);

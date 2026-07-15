@@ -22,7 +22,12 @@ export const RECORD_STATUSES = [
 export type RecordStatus = (typeof RECORD_STATUSES)[number];
 
 /** Types eligible for share suggestions (RFC §7.3). */
-export const SHAREABLE_TYPES: readonly RecordType[] = ["decision", "convention", "gotcha", "runbook"];
+export const SHAREABLE_TYPES: readonly RecordType[] = [
+  "decision",
+  "convention",
+  "gotcha",
+  "runbook",
+];
 
 export const ULID_RE = /^[0-9A-HJKMNP-TV-Z]{26}$/;
 export const SLUG_RE = /^[a-z0-9][a-z0-9._-]*$/;
@@ -36,7 +41,9 @@ export const RECORD_SCHEMA_VERSION = 1;
 
 const ulid = z.string().regex(ULID_RE, "must be a 26-char uppercase ULID");
 const slug = z.string().regex(SLUG_RE, "must be a lowercase slug");
-const isoInstant = z.string().regex(ISO_INSTANT_RE, "must be an ISO-8601 UTC instant (…Z, second precision)");
+const isoInstant = z
+  .string()
+  .regex(ISO_INSTANT_RE, "must be an ISO-8601 UTC instant (…Z, second precision)");
 const isoDate = z.string().regex(ISO_DATE_RE, "must be an ISO-8601 date (YYYY-MM-DD)");
 
 export const ProvenanceSchema = z.object({
@@ -116,7 +123,13 @@ export const ProjectMarkerSchema = z.object({
 });
 export type ProjectMarkerFile = z.infer<typeof ProjectMarkerSchema>;
 
-export const PROPOSAL_STATES = ["proposed", "approved", "published", "rejected", "expired"] as const;
+export const PROPOSAL_STATES = [
+  "proposed",
+  "approved",
+  "published",
+  "rejected",
+  "expired",
+] as const;
 export type ProposalState = (typeof PROPOSAL_STATES)[number];
 
 export interface Proposal {

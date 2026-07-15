@@ -101,7 +101,12 @@ describe("store + index e2e (tmp MEMFED_HOME)", () => {
   it("filters: type, project, tag", async () => {
     const { store, index } = await openStore();
     store.create({ project: "alpha", type: "decision", body: "Alpha decided X.", tags: ["infra"] });
-    store.create({ project: "beta", type: "gotcha", body: "Beta gotcha Y.", tags: ["infra", "ci"] });
+    store.create({
+      project: "beta",
+      type: "gotcha",
+      body: "Beta gotcha Y.",
+      tags: ["infra", "ci"],
+    });
     expect(index.search({ project: "alpha" })).toHaveLength(1);
     expect(index.search({ type: "gotcha" })).toHaveLength(1);
     expect(index.search({ tag: "infra" })).toHaveLength(2);
@@ -124,7 +129,17 @@ describe("CLI smoke (spawned via tsx)", () => {
   it("init → add → search → show round-trip through the real CLI", () => {
     expect(cli(["init"])).toContain("initialized memfed");
     const out = cli(
-      ["add", "--project", "payments-api", "--type", "decision", "--title", "Use ULIDs for record ids", "--body-file", "-"],
+      [
+        "add",
+        "--project",
+        "payments-api",
+        "--type",
+        "decision",
+        "--title",
+        "Use ULIDs for record ids",
+        "--body-file",
+        "-",
+      ],
       "ULIDs sort by time and avoid coordination.\n",
     );
     expect(out).toContain("created");

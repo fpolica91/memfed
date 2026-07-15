@@ -4,7 +4,7 @@ import { isDirty } from "../redact/scan.js";
 import { appendAudit } from "./audit.js";
 import { type Config, type Paths, resolveAuthor } from "./config.js";
 import { newId } from "./ids.js";
-import { IndexDb, LOCAL_SOURCE } from "./index-db.js";
+import { type IndexDb, LOCAL_SOURCE } from "./index-db.js";
 import { parseRecord, recordFileName, serializeRecord } from "./record.js";
 import {
   type MemoryRecord,
@@ -62,12 +62,11 @@ export class Store {
         project: input.project,
         tags: input.tags,
         paths: input.paths,
-        provenance:
-          input.provenance ?? {
-            author: resolveAuthor(this.config),
-            tool: input.tool ?? "manual",
-            created: nowIso(),
-          },
+        provenance: input.provenance ?? {
+          author: resolveAuthor(this.config),
+          tool: input.tool ?? "manual",
+          created: nowIso(),
+        },
         status: input.status ?? "active",
         schema_version: 1,
       },
@@ -79,7 +78,11 @@ export class Store {
     const dirty = isDirty(`${normalized.fm.title}\n${normalized.body}`);
     this.index.upsertRecord(LOCAL_SOURCE, normalized, this.recordPath(id), dirty);
     appendAudit(
-      { action: "add", record_id: id, details: { project: input.project, type: normalized.fm.type } },
+      {
+        action: "add",
+        record_id: id,
+        details: { project: input.project, type: normalized.fm.type },
+      },
       this.paths.auditPath,
     );
     return { record: normalized, dirty };

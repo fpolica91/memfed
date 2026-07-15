@@ -14,6 +14,8 @@ export interface RenderOptions {
   force?: boolean;
   /** Check mode: report what would change, write nothing. */
   check?: boolean;
+  /** Record ids to exclude (quarantine kill-switch). */
+  exclude?: ReadonlySet<string>;
 }
 
 /**
@@ -28,7 +30,7 @@ export function renderProject(
   spaces: string[],
   opts: RenderOptions = {},
 ): RenderTargetResult[] {
-  const records = selectProjectionRecords(index, projectSlug, spaces);
+  const records = selectProjectionRecords(index, projectSlug, spaces, opts.exclude);
   const content = composeProjection(records);
   const targets = ["AGENTS.md", ...(opts.claudeMd ? ["CLAUDE.md"] : [])];
   const results: RenderTargetResult[] = [];

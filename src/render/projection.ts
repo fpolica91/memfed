@@ -26,6 +26,7 @@ export function selectProjectionRecords(
   index: IndexDb,
   project: string,
   spaces: string[],
+  exclude: ReadonlySet<string> = new Set(),
 ): IndexedRecord[] {
   const today = new Date().toISOString().slice(0, 10);
   const rows: IndexedRecord[] = [];
@@ -34,6 +35,7 @@ export function selectProjectionRecords(
       ...index.search({ project, space, status: "active", limit: 200 }).filter(
         (r) =>
           r.source !== LOCAL_SOURCE &&
+          !exclude.has(r.id) && // quarantined (T2 kill-switch)
           TYPE_PRIORITY[r.type] !== undefined &&
           (!r.review_after || r.review_after >= today), // overdue records are excluded (RFC §7.6)
       ),

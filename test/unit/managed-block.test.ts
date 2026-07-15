@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { IndexedRecord } from "../../src/core/index-db.js";
 import {
   applyBlock,
   DamagedBlockError,
@@ -6,7 +7,6 @@ import {
   renderBlock,
 } from "../../src/render/managed-block.js";
 import { composeProjection, MAX_CHARS } from "../../src/render/projection.js";
-import type { IndexedRecord } from "../../src/core/index-db.js";
 
 const CONTENT = "_envelope_\n\n- [decision] Something — a@x, 2026-07-15 (01JZX5M8Q0)";
 

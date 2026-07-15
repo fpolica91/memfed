@@ -155,7 +155,10 @@ describe("MCP contract", () => {
     }
     // Legitimate propose: stages locally, transmits nothing.
     const ok = textOf(
-      await client.callTool({ name: "mem_propose", arguments: { id: recordId, space: "platform" } }),
+      await client.callTool({
+        name: "mem_propose",
+        arguments: { id: recordId, space: "platform" },
+      }),
     );
     expect(ok).toContain("NOT published");
     expect(remoteTree()).toBe(before);

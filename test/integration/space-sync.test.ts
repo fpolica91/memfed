@@ -82,9 +82,13 @@ describe("two-persona space federation over a bare remote", () => {
       "direct",
     ]);
     expect(out).toContain("created space platform");
-    const files = execFileSync("git", ["--git-dir", remote, "ls-tree", "-r", "--name-only", "main"], {
-      encoding: "utf8",
-    });
+    const files = execFileSync(
+      "git",
+      ["--git-dir", remote, "ls-tree", "-r", "--name-only", "main"],
+      {
+        encoding: "utf8",
+      },
+    );
     expect(files).toContain(".memfed/space.yaml");
   });
 
@@ -109,25 +113,32 @@ describe("two-persona space federation over a bare remote", () => {
     expect(fail.code).toBe(2);
     expect(fail.stderr).toContain("aws-access-key-id");
 
-    const tree = execFileSync("git", ["--git-dir", remote, "ls-tree", "-r", "--name-only", "main"], {
-      encoding: "utf8",
-    });
+    const tree = execFileSync(
+      "git",
+      ["--git-dir", remote, "ls-tree", "-r", "--name-only", "main"],
+      {
+        encoding: "utf8",
+      },
+    );
     expect(tree).not.toContain(recordId);
   });
 
   it("after fixing the body, publish succeeds and the audit log records it", () => {
-    run(alice, [
-      "edit",
-      recordId,
-      "--body-file",
-      "-",
-    ], "Rotation is mandatory. Reuse of a rotated token revokes the whole grant chain.\n");
+    run(
+      alice,
+      ["edit", recordId, "--body-file", "-"],
+      "Rotation is mandatory. Reuse of a rotated token revokes the whole grant chain.\n",
+    );
     const out = run(alice, ["share", recordId, "--to", "platform", "--yes"]);
     expect(out).toContain("published");
 
-    const tree = execFileSync("git", ["--git-dir", remote, "ls-tree", "-r", "--name-only", "main"], {
-      encoding: "utf8",
-    });
+    const tree = execFileSync(
+      "git",
+      ["--git-dir", remote, "ls-tree", "-r", "--name-only", "main"],
+      {
+        encoding: "utf8",
+      },
+    );
     expect(tree).toContain(`records/${recordId}.md`);
 
     const audit = execFileSync("cat", [join(String(alice.MEMFED_HOME), "audit.jsonl")], {
@@ -187,9 +198,13 @@ describe("two-persona space federation over a bare remote", () => {
     expect(ra.stdout).toContain("published");
     expect(rb.stdout).toContain("published");
 
-    const tree = execFileSync("git", ["--git-dir", remote, "ls-tree", "-r", "--name-only", "main"], {
-      encoding: "utf8",
-    });
+    const tree = execFileSync(
+      "git",
+      ["--git-dir", remote, "ls-tree", "-r", "--name-only", "main"],
+      {
+        encoding: "utf8",
+      },
+    );
     expect(tree).toContain(`records/${aliceId}.md`);
     expect(tree).toContain(`records/${bobId}.md`);
   });
@@ -207,7 +222,11 @@ describe("two-persona space federation over a bare remote", () => {
     try {
       execFileSync("git", ["clone", "-q", `file://${remote}`, evil], { env: alice });
       // A genuinely rewritten main: a rootless commit with an EMPTY tree.
-      const tree = execFileSync("git", ["mktree"], { cwd: evil, input: "", encoding: "utf8" }).trim();
+      const tree = execFileSync("git", ["mktree"], {
+        cwd: evil,
+        input: "",
+        encoding: "utf8",
+      }).trim();
       const commit = execFileSync("git", ["commit-tree", tree, "-m", "history rewritten"], {
         cwd: evil,
         env: alice,
@@ -252,7 +271,12 @@ describe("field-wise conflict merge (pure)", () => {
       body: "original",
     };
     const ours = {
-      fm: { ...base.fm, status: "deprecated" as const, tags: ["a"], updated: "2026-07-16T00:00:00Z" },
+      fm: {
+        ...base.fm,
+        status: "deprecated" as const,
+        tags: ["a"],
+        updated: "2026-07-16T00:00:00Z",
+      },
       body: "local edit",
     };
     const theirs = {

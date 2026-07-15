@@ -1,6 +1,6 @@
-import { contentHash } from "./record.js";
 import type { Db, SqlValue } from "./db.js";
 import { openDb } from "./db.js";
+import { contentHash } from "./record.js";
 import type { MemoryRecord, Proposal, ProposalState } from "./types.js";
 
 export const INDEX_SCHEMA_VERSION = 1;
@@ -113,11 +113,18 @@ export class IndexDb {
 
   setMeta(key: string, value: string): void {
     this.db
-      .prepare("INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+      .prepare(
+        "INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+      )
       .run(key, value);
   }
 
-  upsertRecord(source: string, record: MemoryRecord, filePath: string, redactionDirty = false): void {
+  upsertRecord(
+    source: string,
+    record: MemoryRecord,
+    filePath: string,
+    redactionDirty = false,
+  ): void {
     const { fm } = record;
     this.removeRecord(source, fm.id);
     this.db
@@ -199,7 +206,9 @@ export class IndexDb {
 
   findByContentHash(hash: string, source?: string): IndexedRecord[] {
     const rows = source
-      ? this.db.prepare("SELECT * FROM records WHERE content_hash = ? AND source = ?").all(hash, source)
+      ? this.db
+          .prepare("SELECT * FROM records WHERE content_hash = ? AND source = ?")
+          .all(hash, source)
       : this.db.prepare("SELECT * FROM records WHERE content_hash = ?").all(hash);
     return rows.map(toIndexed);
   }
@@ -219,6 +228,9 @@ export class IndexDb {
     if (filters.status) {
       where.push("r.status = ?");
       params.push(filters.status);
+    } else {
+      // Retracted records are excluded everywhere unless explicitly requested (RFC §7.6).
+      where.push("r.status != 'retracted'");
     }
     if (filters.space) {
       where.push("r.source = ?");
@@ -241,7 +253,10 @@ export class IndexDb {
         WHERE 1=1 ${whereSql}
         ORDER BY f.rank LIMIT ?`;
       try {
-        return this.db.prepare(sql).all(match, ...params, limit).map(toIndexed);
+        return this.db
+          .prepare(sql)
+          .all(match, ...params, limit)
+          .map(toIndexed);
       } catch {
         // FTS syntax edge case: fall back to LIKE.
         const likeSql = `
@@ -249,7 +264,10 @@ export class IndexDb {
           WHERE (r.title LIKE ? OR r.body LIKE ?) ${where.length ? `AND ${where.join(" AND ")}` : ""}
           ORDER BY r.created DESC LIMIT ?`;
         const like = `%${filters.query.trim()}%`;
-        return this.db.prepare(likeSql).all(like, like, ...params, limit).map(toIndexed);
+        return this.db
+          .prepare(likeSql)
+          .all(like, like, ...params, limit)
+          .map(toIndexed);
       }
     }
 
@@ -257,7 +275,10 @@ export class IndexDb {
       SELECT r.* FROM records r
       ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
       ORDER BY r.created DESC LIMIT ?`;
-    return this.db.prepare(sql).all(...params, limit).map(toIndexed);
+    return this.db
+      .prepare(sql)
+      .all(...params, limit)
+      .map(toIndexed);
   }
 
   // ---- proposals (durable state; survives reindex) ----
@@ -271,7 +292,9 @@ export class IndexDb {
   }
 
   updateProposalState(id: string, state: ProposalState, updated: string): void {
-    this.db.prepare("UPDATE proposals SET state = ?, updated = ? WHERE id = ?").run(state, updated, id);
+    this.db
+      .prepare("UPDATE proposals SET state = ?, updated = ? WHERE id = ?")
+      .run(state, updated, id);
   }
 
   getProposal(id: string): Proposal | undefined {
@@ -288,7 +311,9 @@ export class IndexDb {
 
   findOpenProposal(recordId: string, space: string): Proposal | undefined {
     const row = this.db
-      .prepare("SELECT * FROM proposals WHERE record_id = ? AND space = ? AND state = 'proposed' LIMIT 1")
+      .prepare(
+        "SELECT * FROM proposals WHERE record_id = ? AND space = ? AND state = 'proposed' LIMIT 1",
+      )
       .get(recordId, space);
     return row ? (row as unknown as Proposal) : undefined;
   }

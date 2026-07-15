@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { contentHash, parseRecord, RecordParseError, serializeRecord } from "../../src/core/record.js";
+import {
+  contentHash,
+  parseRecord,
+  RecordParseError,
+  serializeRecord,
+} from "../../src/core/record.js";
 import type { MemoryRecord } from "../../src/core/types.js";
 
 const BASE: MemoryRecord = {
@@ -103,7 +108,10 @@ describe("record canonical serialization", () => {
 
   it("content hash is stable across metadata-only changes", () => {
     const a = contentHash(BASE);
-    const b = contentHash({ ...BASE, fm: { ...BASE.fm, tags: ["different"], status: "deprecated" } });
+    const b = contentHash({
+      ...BASE,
+      fm: { ...BASE.fm, tags: ["different"], status: "deprecated" },
+    });
     const c = contentHash({ ...BASE, body: `${BASE.body} changed` });
     expect(a).toBe(b);
     expect(a).not.toBe(c);

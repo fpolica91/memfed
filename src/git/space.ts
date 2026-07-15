@@ -8,13 +8,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
-import {
-  type Config,
-  loadState,
-  type Paths,
-  saveConfig,
-  saveState,
-} from "../core/config.js";
+import { type Config, loadState, type Paths, saveConfig, saveState } from "../core/config.js";
 import type { IndexDb } from "../core/index-db.js";
 import { parseRecord } from "../core/record.js";
 import { formatZodError, type SpaceManifest, SpaceManifestSchema } from "../core/types.js";
@@ -35,8 +29,7 @@ export function spaceDir(paths: Paths, name: string): string {
 
 export function readManifest(dir: string): SpaceManifest {
   const file = join(dir, MANIFEST_PATH);
-  if (!existsSync(file))
-    throw new Error(`${dir} is not a memfed space (missing ${MANIFEST_PATH})`);
+  if (!existsSync(file)) throw new Error(`${dir} is not a memfed space (missing ${MANIFEST_PATH})`);
   const parsed = SpaceManifestSchema.safeParse(parseYaml(readFileSync(file, "utf8")));
   if (!parsed.success) throw new Error(`${file}: ${formatZodError(parsed.error)}`);
   return parsed.data;
@@ -44,9 +37,13 @@ export function readManifest(dir: string): SpaceManifest {
 
 export function loadSpace(paths: Paths, config: Config, name: string): Space {
   const entry = config.spaces[name];
-  if (!entry) throw new Error(`unknown space '${name}' (known: ${Object.keys(config.spaces).join(", ") || "none"})`);
+  if (!entry)
+    throw new Error(
+      `unknown space '${name}' (known: ${Object.keys(config.spaces).join(", ") || "none"})`,
+    );
   const dir = spaceDir(paths, name);
-  if (!existsSync(dir)) throw new Error(`space '${name}' has no local clone — run 'memfed sync ${name}'`);
+  if (!existsSync(dir))
+    throw new Error(`space '${name}' has no local clone — run 'memfed sync ${name}'`);
   return { name, url: entry.url, dir, manifest: readManifest(dir) };
 }
 
@@ -59,11 +56,7 @@ export interface InitSpaceInput {
 }
 
 /** Create a brand-new space repo and push its initial layout (RFC §6). */
-export function initSpace(
-  paths: Paths,
-  config: Config,
-  input: InitSpaceInput,
-): Space {
+export function initSpace(paths: Paths, config: Config, input: InitSpaceInput): Space {
   if (config.spaces[input.name]) throw new Error(`space '${input.name}' already exists in config`);
   const dir = spaceDir(paths, input.name);
   if (existsSync(dir)) throw new Error(`${dir} already exists`);
@@ -78,7 +71,10 @@ export function initSpace(
   mkdirSync(join(dir, ".memfed"), { recursive: true });
   mkdirSync(join(dir, "records"), { recursive: true });
   writeFileSync(join(dir, MANIFEST_PATH), stringifyYaml(manifest, { lineWidth: 0 }));
-  writeFileSync(join(dir, ".memfed", "lint-allow"), "# ruleId:fingerprint entries accepted by reviewers\n");
+  writeFileSync(
+    join(dir, ".memfed", "lint-allow"),
+    "# ruleId:fingerprint entries accepted by reviewers\n",
+  );
   writeFileSync(join(dir, "records", ".gitkeep"), "");
   writeFileSync(
     join(dir, "README.md"),
@@ -87,9 +83,17 @@ export function initSpace(
 
   git(["init", "-b", "main"], { cwd: dir });
   git(["add", "-A"], { cwd: dir });
-  git(["commit", "-q", "-m", `memfed: initialize space '${input.name}' (${manifest.kind}, publish=${manifest.publish})`], {
-    cwd: dir,
-  });
+  git(
+    [
+      "commit",
+      "-q",
+      "-m",
+      `memfed: initialize space '${input.name}' (${manifest.kind}, publish=${manifest.publish})`,
+    ],
+    {
+      cwd: dir,
+    },
+  );
   git(["remote", "add", "origin", input.url], { cwd: dir });
   git(["push", "-q", "-u", "origin", "main"], { cwd: dir });
 
