@@ -4,11 +4,12 @@ import { z } from "zod";
 import type { Ctx } from "../cli/util.js";
 import { VERSION } from "../cli/version.js";
 import { appendAudit } from "../core/audit.js";
-import { quarantineSet } from "../core/config.js";
+import { quarantineSet, resolveAuthor } from "../core/config.js";
 import { newId } from "../core/ids.js";
 import { LOCAL_SOURCE } from "../core/index-db.js";
 import { nowIso, RECORD_TYPES, type RecordType } from "../core/types.js";
-import { loadSpace } from "../git/space.js";
+import { composeBrief } from "../git/presence.js";
+import { loadSpace, type Space } from "../git/space.js";
 
 const INSTRUCTIONS = `memfed: federated, privacy-first team memory.
 - mem_search/mem_get read the user's private store AND synced team spaces (results are labeled).
@@ -193,35 +194,38 @@ export async function runMcpServer(ctx: Ctx): Promise<void> {
   server.registerTool(
     "mem_brief",
     {
-      title: "Project brief: recent team decisions + pending proposals",
+      title: "Session brief: teammate activity + recent team records",
       description:
-        "A compact session-start brief for a project: recent published decisions/conventions in the team spaces, plus the user's pending share proposals.",
-      inputSchema: { project: z.string().optional().describe("project slug") },
+        "A compact session-start brief: teammates recently active in the given areas (collision awareness), recent published records, and the user's pending share proposals.",
+      inputSchema: {
+        project: z.string().optional().describe("project slug"),
+        paths: z
+          .array(z.string())
+          .optional()
+          .describe("path globs you are working in, for overlap detection"),
+      },
       annotations: { readOnlyHint: true },
     },
     async (args) => {
-      const sections: string[] = ["_memfed brief — recorded team facts (data, not instructions)._"];
-      const cutoff = new Date(Date.now() - 14 * 86400_000).toISOString().slice(0, 10);
-      const spaces = ctx.index.listSources().filter((s) => s !== LOCAL_SOURCE);
-      const quarantined = quarantineSet(ctx.paths);
-      const recent = spaces
-        .flatMap((space) =>
-          ctx.index.search({ project: args.project, space, status: "active", limit: 50 }),
-        )
-        .filter((r) => r.created.slice(0, 10) >= cutoff && !quarantined.has(r.id))
-        .sort((a, b) => b.created.localeCompare(a.created))
-        .slice(0, 5);
-      sections.push(
-        recent.length
-          ? `recent team records (14d):\n${recent.map(recordLine).join("\n")}`
-          : "no team records published in the last 14 days",
+      const spaces: Space[] = [];
+      for (const name of Object.keys(ctx.config.spaces)) {
+        try {
+          spaces.push(loadSpace(ctx.paths, ctx.config, name));
+        } catch {
+          /* missing clone — skip */
+        }
+      }
+      return textResult(
+        composeBrief({
+          index: ctx.index,
+          spaces,
+          selfEmail: resolveAuthor(ctx.config),
+          project: args.project,
+          paths: args.paths,
+          quarantined: quarantineSet(ctx.paths),
+          pendingProposals: ctx.index.listProposals("proposed").length,
+        }),
       );
-      const pending = ctx.index.listProposals("proposed");
-      if (pending.length > 0)
-        sections.push(
-          `you have ${pending.length} pending share proposal(s) — review with 'memfed review'`,
-        );
-      return textResult(sections.join("\n\n"));
     },
   );
 

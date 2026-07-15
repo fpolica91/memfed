@@ -1,8 +1,10 @@
 import { Command } from "commander";
 import pc from "picocolors";
 import { suppressSqliteExperimentalWarning } from "../core/db.js";
+import { registerBriefCommand } from "./commands/brief.js";
 import { registerConnectCommands } from "./commands/connect.js";
 import { registerDoctorCommand } from "./commands/doctor.js";
+import { registerImportCommands } from "./commands/import.js";
 import { registerLifecycleCommands } from "./commands/lifecycle.js";
 import { registerMcpCommand } from "./commands/mcp.js";
 import { registerReviewCommands } from "./commands/review.js";
@@ -29,6 +31,8 @@ registerReviewCommands(program);
 registerLifecycleCommands(program);
 registerSyncCommand(program);
 registerConnectCommands(program);
+registerBriefCommand(program);
+registerImportCommands(program);
 registerMcpCommand(program);
 registerDoctorCommand(program);
 

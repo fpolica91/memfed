@@ -22,15 +22,37 @@ export interface Db {
   close(): void;
 }
 
-export async function openDb(file: string): Promise<Db> {
-  if (process.versions.bun) return openBunDb(file);
-  return openNodeDb(file);
+export interface OpenDbOptions {
+  /** Open strictly read-only (importers reading foreign databases). */
+  readOnly?: boolean;
 }
 
-async function openNodeDb(file: string): Promise<Db> {
+export async function openDb(file: string, opts: OpenDbOptions = {}): Promise<Db> {
+  if (process.versions.bun) return openBunDb(file, opts);
+  return openNodeDb(file, opts);
+}
+
+async function openNodeDb(file: string, opts: OpenDbOptions): Promise<Db> {
   const { DatabaseSync } = await import("node:sqlite");
+  if (opts.readOnly) {
+    const db = new DatabaseSync(file, { readOnly: true });
+    db.exec("PRAGMA busy_timeout = 3000");
+    return wrapNode(db);
+  }
   const db = new DatabaseSync(file);
   db.exec("PRAGMA journal_mode = WAL");
+  return wrapNode(db);
+}
+
+function wrapNode(db: {
+  prepare(sql: string): {
+    run(...p: SqlValue[]): unknown;
+    get(...p: SqlValue[]): unknown;
+    all(...p: SqlValue[]): unknown;
+  };
+  exec(sql: string): void;
+  close(): void;
+}): Db {
   return {
     prepare(sql) {
       const stmt = db.prepare(sql);
@@ -45,11 +67,12 @@ async function openNodeDb(file: string): Promise<Db> {
   };
 }
 
-async function openBunDb(file: string): Promise<Db> {
+async function openBunDb(file: string, opts: OpenDbOptions): Promise<Db> {
   const specifier = "bun:sqlite";
   const mod = (await import(specifier)) as {
     Database: new (
       file: string,
+      options?: { readonly?: boolean },
     ) => {
       query(sql: string): {
         run(...p: SqlValue[]): { changes: number; lastInsertRowid: number };
@@ -60,8 +83,8 @@ async function openBunDb(file: string): Promise<Db> {
       close(): void;
     };
   };
-  const db = new mod.Database(file);
-  db.exec("PRAGMA journal_mode = WAL");
+  const db = new mod.Database(file, opts.readOnly ? { readonly: true } : undefined);
+  if (!opts.readOnly) db.exec("PRAGMA journal_mode = WAL");
   return {
     prepare(sql) {
       const stmt = db.query(sql);
