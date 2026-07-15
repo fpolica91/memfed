@@ -1,0 +1,54 @@
+{
+  "name": "memfed",
+  "version": "0.1.0-dev",
+  "description": "Federated, privacy-first shared memory for AI coding assistants. Private by default; published by consent into git-backed spaces; distributed to every assistant via MCP and AGENTS.md.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "bin": {
+    "memfed": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx src/cli/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src test",
+    "format": "biome format --write src test"
+  },
+  "keywords": [
+    "memory",
+    "mcp",
+    "ai",
+    "claude-code",
+    "codex",
+    "federation",
+    "knowledge"
+  ],
+  "dependencies": {
+    "@clack/prompts": "^1.7.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "commander": "^15.0.0",
+    "picocolors": "^1.1.1",
+    "smol-toml": "^1.7.0",
+    "ulidx": "^2.4.1",
+    "yaml": "^2.9.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.3",
+    "@types/node": "^26.1.1",
+    "tsup": "^8.5.1",
+    "tsx": "^4.23.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}
