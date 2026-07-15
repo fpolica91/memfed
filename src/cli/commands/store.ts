@@ -213,11 +213,25 @@ export function registerStoreCommands(program: Command): void {
     .command("reindex")
     .description("rebuild the search index from record files (files are the truth)")
     .option("--full", "also clear and rebuild space sources")
-    .action(async () => {
-      await withCtx((ctx) => {
+    .action(async (opts) => {
+      await withCtx(async (ctx) => {
         const { count, errors } = ctx.store.reindexLocal();
         console.log(`reindexed ${count} private record(s)`);
         for (const e of errors) console.error(pc.red(`  skip ${e.file}: ${e.error}`));
+        if (opts.full) {
+          const { reindexSpace } = await import("../../git/space.js");
+          const { ensureSpaceClone } = await import("./sync.js");
+          for (const name of Object.keys(ctx.config.spaces)) {
+            try {
+              const space = ensureSpaceClone(ctx, name);
+              const r = reindexSpace(ctx.index, space);
+              console.log(`reindexed ${r.count} record(s) from space '${name}'`);
+              errors.push(...r.errors);
+            } catch (e) {
+              console.error(pc.red(`  space ${name}: ${(e as Error).message}`));
+            }
+          }
+        }
         if (errors.length > 0) process.exitCode = 1;
       });
     });

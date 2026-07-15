@@ -2,7 +2,10 @@ import { Command } from "commander";
 import pc from "picocolors";
 import { suppressSqliteExperimentalWarning } from "../core/db.js";
 import { registerDoctorCommand } from "./commands/doctor.js";
+import { registerShareCommands } from "./commands/share.js";
+import { registerSpaceCommands } from "./commands/space.js";
 import { registerStoreCommands } from "./commands/store.js";
+import { registerSyncCommand } from "./commands/sync.js";
 import { CliError } from "./util.js";
 import { VERSION } from "./version.js";
 
@@ -16,6 +19,9 @@ const program = new Command("memfed")
   .configureHelp({ sortSubcommands: false });
 
 registerStoreCommands(program);
+registerSpaceCommands(program);
+registerShareCommands(program);
+registerSyncCommand(program);
 registerDoctorCommand(program);
 
 program.parseAsync(process.argv).catch((err: unknown) => {
