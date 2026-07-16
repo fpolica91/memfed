@@ -50,5 +50,14 @@
     "tsx": "^4.23.1",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fpolica91/memfed.git"
+  },
+  "homepage": "https://github.com/fpolica91/memfed#readme",
+  "bugs": {
+    "url": "https://github.com/fpolica91/memfed/issues"
+  },
+  "author": "Fabricio Policarpo"
 }

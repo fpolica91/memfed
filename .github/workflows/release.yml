@@ -1,0 +1,48 @@
+name: release
+
+# Publishes to npm when a GitHub Release is published.
+# Auth, in order of preference:
+#   1. npm Trusted Publishing (OIDC) — configure this repo+workflow as a trusted
+#      publisher in the npm package settings; no secret needed (npm CLI >= 11.5).
+#   2. Fallback: an automation token in the NPM_TOKEN repo secret.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write # checkout + uploading the tarball to the release
+  id-token: write # npm provenance / trusted publishing
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - run: git config --global user.name ci && git config --global user.email ci@memfed.test
+      - run: npm ci
+      - run: npm run lint && npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: verify tag matches package.json version
+        run: |
+          node -e "
+            const v = 'v' + require('./package.json').version;
+            const tag = process.env.GITHUB_REF_NAME;
+            if (v !== tag) { console.error(\`tag \${tag} != package version \${v}\`); process.exit(1); }
+          "
+      - name: publish to npm (with provenance)
+        run: |
+          npm install -g npm@latest # OIDC trusted publishing needs npm >= 11.5
+          npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: attach tarball to the GitHub release
+        run: |
+          npm pack
+          gh release upload "$GITHUB_REF_NAME" ./memfed-*.tgz --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
