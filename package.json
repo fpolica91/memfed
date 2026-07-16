@@ -1,5 +1,5 @@
 {
-  "name": "memfed",
+  "name": "memfed-cli",
   "version": "0.1.0",
   "description": "Federated, privacy-first shared memory for AI coding assistants. Private by default; published by consent into git-backed spaces; distributed to every assistant via MCP and AGENTS.md.",
   "license": "Apache-2.0",

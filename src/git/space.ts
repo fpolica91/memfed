@@ -107,7 +107,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - run: npx --yes memfed lint-space
+      - run: npx --yes memfed-cli lint-space
 `;
 
 /** Create a space and push its layout: a fresh dedicated repo, or in-repo at --root (RFC §6). */

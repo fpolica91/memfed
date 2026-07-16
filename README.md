@@ -25,7 +25,8 @@ Spec: [RFC-0001](docs/rfc-0001-memfed.md) · Status: **v0.1 (working MVP)** · L
 ## Quickstart
 
 ```bash
-npm install -g memfed        # or run from a checkout: node_modules/.bin/tsx src/cli/index.ts
+npm install -g memfed-cli    # installs the `memfed` command (npm package is memfed-cli;
+                             # the unscoped name 'memfed' collides with npm's memfs similarity guard)
 memfed init                  # private store at ~/.memfed
 memfed doctor                # check runtime, git identity, assistants on PATH
 

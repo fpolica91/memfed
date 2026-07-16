@@ -49,7 +49,7 @@ export function registerSpaceCommands(program: Command): void {
         if (s.root)
           console.log(
             pc.dim(
-              "in-repo space: add the memfed-lint job to the HOST repo's CI yourself (npx memfed lint-space) — memfed never touches files outside its root",
+              "in-repo space: add the memfed-lint job to the HOST repo's CI yourself (npx memfed-cli lint-space) — memfed never touches files outside its root",
             ),
           );
         console.log(pc.dim(`clone: ${s.dir}\nteammates join with: memfed space add ${url}`));

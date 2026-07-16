@@ -9,7 +9,7 @@ import { CliError } from "../util.js";
 /**
  * Space-side CI backstop (RFC §3): re-run the deterministic redaction stages
  * over every record in a space checkout. Runs WITHOUT a memfed home — it lints
- * the checkout it's pointed at, so a bare `npx memfed lint-space` works in CI.
+ * the checkout it's pointed at, so a bare `npx memfed-cli lint-space` works in CI.
  * The allowlist is the space's own .memfed/lint-allow (ruleId:fingerprint lines).
  */
 
