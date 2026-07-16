@@ -54,6 +54,8 @@ memfed connect crush     # crush.json (experimental)
 
 # --- start-of-session awareness ---
 memfed brief --paths 'src/billing/**'   # who's been in your areas + fresh decisions
+memfed suggest --propose                # deterministic share candidates -> review queue
+memfed status                           # store, queue, spaces, promotion drift
 
 # --- bring your existing memory along (lands private, as candidates) ---
 memfed import claude-mem             # decisions from ~/.claude-mem (read-only)
@@ -100,6 +102,7 @@ Works on Node ≥ 22.13 (`node:sqlite`) and Bun (`bun:sqlite`) through a driver 
 ## Status & roadmap
 
 Implemented: records/store/index, spaces, direct + PR publish flows, redaction gate, sync with TOFU pinning, MCP server (5 tools), AGENTS.md projections, connect (claude/codex/cursor/crush\*, `--hook` for a SessionStart brief), retract/supersede/quarantine/`promote`/`gardening`, importers (claude-mem, claude-native), activity briefs **plus opt-in presence files** (`memfed presence set/show/off`, TTL'd, hour-rounded, history-squashable via `space prune-presence`), space-side CI lint (`memfed lint-space`, workflow shipped by `space init`), `gh pr` sugar on GitHub remotes.
+Also in: field-wise conflict auto-resolution during sync (status by safety precedence, lists unioned, remote body wins with your local body parked as a private draft), `suggest` (RFC §7.3 candidate detection), `status` (RFC §6.4 promotion drift).
 Not yet: embeddings, in-repo spaces (`root:` reserved), encrypted spaces (deliberately rejected for v1). See RFC-0001 §17.
 
 \* Crush stanza is spec-based but untested (not installed on the dev machine).

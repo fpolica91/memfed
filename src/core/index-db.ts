@@ -177,6 +177,34 @@ export class IndexDb {
       .map((r) => String(r.source));
   }
 
+  /** Private-store rollup for `memfed status`. */
+  localStats(): { total: number; candidates: number; dirty: number } {
+    const row = this.db
+      .prepare(
+        `SELECT COUNT(*) AS total,
+                COALESCE(SUM(CASE WHEN status = 'candidate' THEN 1 ELSE 0 END), 0) AS candidates,
+                COALESCE(SUM(CASE WHEN redaction_dirty = 1 THEN 1 ELSE 0 END), 0) AS dirty
+         FROM records WHERE source = ?`,
+      )
+      .get(LOCAL_SOURCE);
+    return {
+      total: Number(row?.total ?? 0),
+      candidates: Number(row?.candidates ?? 0),
+      dirty: Number(row?.dirty ?? 0),
+    };
+  }
+
+  /** Records published in more than one space (promotion-drift candidates, RFC §6.4). */
+  crossSpaceRecords(): Array<{ id: string; sources: string[] }> {
+    const rows = this.db
+      .prepare(
+        `SELECT id, GROUP_CONCAT(source) AS sources FROM records
+         WHERE source != ? GROUP BY id HAVING COUNT(*) > 1`,
+      )
+      .all(LOCAL_SOURCE);
+    return rows.map((r) => ({ id: String(r.id), sources: String(r.sources).split(",").sort() }));
+  }
+
   /** Sources (space names / 'local') a record id exists in. */
   sourcesForId(id: string): string[] {
     return this.db
