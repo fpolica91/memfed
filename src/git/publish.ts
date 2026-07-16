@@ -1,5 +1,5 @@
-import { writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import pc from "picocolors";
 import type { Ctx } from "../cli/util.js";
 import { CliError, EXIT_REDACTION_BLOCK } from "../cli/util.js";
@@ -10,7 +10,7 @@ import type { MemoryRecord } from "../core/types.js";
 import { loadAllowlist, RULESET_VERSION, type ScanResult, scan } from "../redact/scan.js";
 import { git, pushMainWithRetry, revParse } from "./exec.js";
 import type { Space } from "./space.js";
-import { pinSpace } from "./space.js";
+import { pinSpace, recordRelPath } from "./space.js";
 
 export interface PublishOutcome {
   commit: string;
@@ -68,8 +68,9 @@ export function commitAndPush(
   space: Space,
   opts: { message?: string } = {},
 ): PublishOutcome {
-  const relPath = join("records", `${record.fm.id}.md`);
+  const relPath = recordRelPath(space, record.fm.id);
   const absPath = join(space.dir, relPath);
+  mkdirSync(dirname(absPath), { recursive: true });
   const text = serializeRecord(record);
   writeFileSync(absPath, text);
 

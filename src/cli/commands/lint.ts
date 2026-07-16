@@ -15,16 +15,45 @@ import { CliError } from "../util.js";
 
 const STYLE_TITLE_RE = /^(always|never|you must|do not|run |execute |curl |pipe )/i;
 
+/** Breadth-limited scan for directories containing .memfed/space.yaml. */
+function findSpaceRoots(base: string, maxDepth: number): string[] {
+  const roots: string[] = [];
+  const walk = (dir: string, depth: number): void => {
+    if (existsSync(join(dir, ".memfed", "space.yaml"))) {
+      roots.push(dir);
+      return;
+    }
+    if (depth >= maxDepth) return;
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (!entry.isDirectory() || entry.name === ".git" || entry.name === "node_modules") continue;
+      walk(join(dir, entry.name), depth + 1);
+    }
+  };
+  walk(base, 0);
+  return roots;
+}
+
 export function registerLintCommand(program: Command): void {
   program
     .command("lint-space")
     .description("CI backstop: scan every record in a space checkout for secret-shaped content")
     .option("--dir <path>", "space checkout to lint", ".")
+    .option("--root <subdir>", "in-repo mode: lint the space at this subdirectory")
     .action(async (opts) => {
-      const dir = resolve(opts.dir);
+      const repoDir = resolve(opts.dir);
+      let dir = opts.root ? join(repoDir, opts.root) : repoDir;
+      if (!existsSync(join(dir, "records"))) {
+        // Auto-discover an in-repo space root (host-repo CI runs from the repo root).
+        const found = findSpaceRoots(repoDir, 3);
+        if (found.length === 1) dir = found[0] as string;
+        else if (found.length > 1)
+          throw new CliError(
+            `multiple memfed spaces under ${repoDir} (${found.join(", ")}) — pass --root`,
+          );
+        else
+          throw new CliError(`${repoDir} is not a memfed space checkout (no records/ directory)`);
+      }
       const recordsDir = join(dir, "records");
-      if (!existsSync(recordsDir))
-        throw new CliError(`${dir} is not a memfed space checkout (no records/ directory)`);
 
       const allowFile = join(dir, ".memfed", "lint-allow");
       const allow = existsSync(allowFile)

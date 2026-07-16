@@ -6,6 +6,8 @@ import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 
 export interface SpaceEntry {
   url: string;
+  /** In-repo mode: space content lives at this subdirectory of the host repo. */
+  root?: string;
 }
 
 export interface ProjectEntry {

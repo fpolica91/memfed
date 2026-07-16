@@ -9,7 +9,7 @@ import { nowIso } from "../../core/types.js";
 import { git, pushMainWithRetry } from "../../git/exec.js";
 import { pushProposalBranch } from "../../git/proposals.js";
 import { commitAndPush, runRedactionGate } from "../../git/publish.js";
-import { loadSpace, type Space } from "../../git/space.js";
+import { contentDir, loadSpace, recordRelPath, type Space } from "../../git/space.js";
 import { CliError, type Ctx, openCtx, resolveId } from "../util.js";
 
 async function withCtx<T>(fn: (ctx: Ctx) => Promise<T> | T): Promise<T> {
@@ -22,7 +22,7 @@ async function withCtx<T>(fn: (ctx: Ctx) => Promise<T> | T): Promise<T> {
 }
 
 function readSpaceRecord(space: Space, id: string) {
-  const file = join(space.dir, "records", `${id}.md`);
+  const file = join(contentDir(space), "records", `${id}.md`);
   return { file, record: parseRecord(readFileSync(file, "utf8"), file) };
 }
 
@@ -49,7 +49,7 @@ export function registerLifecycleCommands(program: Command): void {
           `The original body was removed from the tip of this space. Git history preserves\n` +
           `it — if this retraction removes a leaked credential, ROTATE THE CREDENTIAL.`;
         writeFileSync(file, serializeRecord(record));
-        git(["add", `records/${id}.md`], { cwd: space.dir });
+        git(["add", recordRelPath(space, id)], { cwd: space.dir });
         git(["commit", "-q", "-m", `memfed: retract ${id.slice(0, 10)}`], { cwd: space.dir });
         pushMainWithRetry(space.dir, `retraction of ${id}`);
         ctx.index.upsertRecord(space.name, record, file);
@@ -89,7 +89,7 @@ export function registerLifecycleCommands(program: Command): void {
         const replacement = ctx.store.get(newId_);
         replacement.fm.supersedes = oldId;
         runRedactionGate(ctx, replacement, space);
-        const newFile = join(space.dir, "records", `${newId_}.md`);
+        const newFile = join(contentDir(space), "records", `${newId_}.md`);
         writeFileSync(newFile, serializeRecord(replacement));
 
         // Old record: metadata-only backlink commit (RFC §7.6).
@@ -99,7 +99,7 @@ export function registerLifecycleCommands(program: Command): void {
         old.fm.updated = nowIso();
         writeFileSync(oldFile, serializeRecord(old));
 
-        git(["add", `records/${oldId}.md`, `records/${newId_}.md`], { cwd: space.dir });
+        git(["add", recordRelPath(space, oldId), recordRelPath(space, newId_)], { cwd: space.dir });
         git(
           [
             "commit",

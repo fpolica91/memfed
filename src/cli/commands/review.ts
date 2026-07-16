@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import { confirm, isCancel, select } from "@clack/prompts";
 import type { Command } from "commander";
 import pc from "picocolors";
@@ -12,7 +13,7 @@ import {
   rejectProposal,
 } from "../../git/proposals.js";
 import { commitAndPush, runRedactionGate } from "../../git/publish.js";
-import { loadSpace } from "../../git/space.js";
+import { contentDir, loadSpace } from "../../git/space.js";
 import { scan } from "../../redact/scan.js";
 import { CliError, type Ctx, openCtx, resolveId } from "../util.js";
 
@@ -225,7 +226,11 @@ export function registerReviewCommands(program: Command): void {
           // Reviewer-side re-validation: the approver's client re-runs the gate (RFC §7.4).
           runRedactionGate(ctx, record, space);
           const commit = mergeProposal(ctx, space, hit);
-          ctx.index.upsertRecord(space.name, record, `${space.dir}/records/${hit.recordId}.md`);
+          ctx.index.upsertRecord(
+            space.name,
+            record,
+            join(contentDir(space), "records", `${hit.recordId}.md`),
+          );
           console.log(
             `${pc.green("approved")} ${hit.recordId} → '${opts.space}' main ${pc.dim(`@${commit.slice(0, 8)}`)}`,
           );

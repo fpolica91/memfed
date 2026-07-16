@@ -29,6 +29,10 @@ export function registerSpaceCommands(program: Command): void {
     .option("--kind <kind>", "project|team|org", "team")
     .option("--policy <policy>", "publish policy: direct|pr (org default: pr)")
     .option("--description <text>")
+    .option(
+      "--root <subdir>",
+      "in-repo mode: create the space at this subdirectory of an EXISTING repo (e.g. .memory)",
+    )
     .action(async (url, opts) => {
       await withCtx((ctx) => {
         const s = initSpace(ctx.paths, ctx.config, {
@@ -37,21 +41,29 @@ export function registerSpaceCommands(program: Command): void {
           kind: opts.kind,
           policy: opts.policy,
           description: opts.description,
+          root: opts.root,
         });
         console.log(
-          `${pc.green("created space")} ${pc.bold(s.name)} (${s.manifest.kind}, publish=${s.manifest.publish})`,
+          `${pc.green("created space")} ${pc.bold(s.name)} (${s.manifest.kind}, publish=${s.manifest.publish}${s.root ? `, in-repo at ${s.root}/` : ""})`,
         );
+        if (s.root)
+          console.log(
+            pc.dim(
+              "in-repo space: add the memfed-lint job to the HOST repo's CI yourself (npx memfed lint-space) — memfed never touches files outside its root",
+            ),
+          );
         console.log(pc.dim(`clone: ${s.dir}\nteammates join with: memfed space add ${url}`));
       });
     });
 
   space
     .command("add <url>")
-    .description("join an existing space by cloning it")
+    .description("join an existing space by cloning it (in-repo roots are auto-discovered)")
     .option("--name <name>", "local alias (default: the space's manifest name)")
+    .option("--root <subdir>", "in-repo mode: the subdirectory holding the space")
     .action(async (url, opts) => {
       await withCtx((ctx) => {
-        const s = addSpace(ctx.paths, ctx.config, url, opts.name);
+        const s = addSpace(ctx.paths, ctx.config, url, opts.name, opts.root);
         const { count, errors } = reindexSpace(ctx.index, s);
         console.log(
           `${pc.green("joined space")} ${pc.bold(s.name)} (${s.manifest.kind}) — indexed ${count} record(s)`,

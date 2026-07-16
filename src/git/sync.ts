@@ -9,7 +9,14 @@ import { parseRecord, serializeRecord } from "../core/record.js";
 import { mergeRecords } from "./conflicts.js";
 import { aheadCount, changedFiles, git, isAncestor, revParse, sleepJitter } from "./exec.js";
 import { hourRoundedNow, writePresence } from "./presence.js";
-import { getPin, indexedShaKey, pinSpace, reindexSpace, type Space } from "./space.js";
+import {
+  getPin,
+  indexedShaKey,
+  pinSpace,
+  recordsPrefix,
+  reindexSpace,
+  type Space,
+} from "./space.js";
 
 export interface SyncResult {
   space: string;
@@ -145,7 +152,7 @@ export function rebaseWithFieldMerge(ctx: Ctx, space: Space): void {
     if (conflicted.length === 0) break; // not a content conflict — bail below
 
     for (const file of conflicted) {
-      if (file.startsWith("records/") && file.endsWith(".md")) {
+      if (file.startsWith(recordsPrefix(space)) && file.endsWith(".md")) {
         // In a rebase, stage 2 = upstream (remote/canonical), stage 3 = the local commit.
         const remoteText = git(["show", `:2:${file}`], { cwd: space.dir, check: false });
         const localText = git(["show", `:3:${file}`], { cwd: space.dir, check: false });
@@ -245,8 +252,9 @@ function applyDiffToIndex(
   for (const line of changedFiles(space.dir, from, to)) {
     const [status, ...pathParts] = line.split("\t");
     const rel = pathParts[pathParts.length - 1];
-    if (!rel || !rel.startsWith("records/") || !rel.endsWith(".md")) continue;
-    const id = rel.slice("records/".length, -3);
+    const prefix = recordsPrefix(space);
+    if (!rel || !rel.startsWith(prefix) || !rel.endsWith(".md")) continue;
+    const id = rel.slice(prefix.length, -3);
     if (status?.startsWith("D")) {
       index.removeRecord(space.name, id);
       result.removed++;

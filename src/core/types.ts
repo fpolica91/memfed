@@ -102,6 +102,9 @@ export const FRONTMATTER_KEY_ORDER = [
   "schema_version",
 ] as const;
 
+/** Relative subdirectory: no leading/trailing slash, no '..' segments. */
+export const SUBDIR_RE = /^(?!.*(?:^|\/)\.\.(?:\/|$))[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*$/;
+
 /** Space manifest — .memfed/space.yaml (RFC §6.1). */
 export const SpaceManifestSchema = z.object({
   name: slug,
@@ -113,6 +116,8 @@ export const SpaceManifestSchema = z.object({
     .object({ ruleset_min_version: z.number().int().min(1).default(1) })
     .default({ ruleset_min_version: 1 }),
   layout_version: z.literal(1).default(1),
+  /** In-repo mode (RFC §6.3): space content lives at this subdirectory of the host repo. */
+  root: z.string().regex(SUBDIR_RE, "root must be a relative subdirectory").optional(),
 });
 export type SpaceManifest = z.infer<typeof SpaceManifestSchema>;
 

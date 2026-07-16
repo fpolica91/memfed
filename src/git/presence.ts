@@ -5,7 +5,7 @@ import { appendAudit } from "../core/audit.js";
 import type { Paths } from "../core/config.js";
 import type { IndexDb, IndexedRecord } from "../core/index-db.js";
 import { git, revParse } from "./exec.js";
-import type { Space } from "./space.js";
+import { presencePrefix, recordsPrefix, type Space } from "./space.js";
 
 /**
  * "Recent activity", never "live presence" (RFC §9). Layer 1 is derived from
@@ -21,15 +21,9 @@ export interface AuthorActivity {
 }
 
 export function spaceActivity(space: Space, days = 14): AuthorActivity[] {
+  const prefix = recordsPrefix(space);
   const log = git(
-    [
-      "log",
-      `--since=${days}.days`,
-      "--pretty=%x01%ae%x02%an%x02%at",
-      "--name-only",
-      "--",
-      "records/",
-    ],
+    ["log", `--since=${days}.days`, "--pretty=%x01%ae%x02%an%x02%at", "--name-only", "--", prefix],
     { cwd: space.dir, check: false },
   );
   if (log.code !== 0) return [];
@@ -52,8 +46,8 @@ export function spaceActivity(space: Space, days = 14): AuthorActivity[] {
         };
         byEmail.set(email ?? "", current);
       }
-    } else if (current && line.startsWith("records/") && line.endsWith(".md")) {
-      const id = line.slice("records/".length, -3);
+    } else if (current && line.startsWith(prefix) && line.endsWith(".md")) {
+      const id = line.slice(prefix.length, -3);
       if (!current.recordIds.includes(id)) current.recordIds.push(id);
     }
   }
@@ -104,7 +98,7 @@ export function readPresence(space: Space): PresenceEntry[] {
   git(["fetch", "-q", "origin", "presence"], { cwd: space.dir, check: false });
   const tip = revParse(space.dir, "origin/presence");
   if (!tip) return [];
-  const files = git(["ls-tree", "--name-only", tip, "presence/"], {
+  const files = git(["ls-tree", "--name-only", tip, presencePrefix(space)], {
     cwd: space.dir,
     check: false,
   })
@@ -136,7 +130,7 @@ export function readPresence(space: Space): PresenceEntry[] {
 
 /** Push one presence file to the presence branch via plumbing (no checkout churn). */
 export function writePresence(paths: Paths, space: Space, entry: PresenceEntry): void {
-  const file = `presence/${authorSlug(entry.author)}.md`;
+  const file = `${presencePrefix(space)}${authorSlug(entry.author)}.md`;
   const text = stringifyYaml(
     {
       author: entry.author,
@@ -205,7 +199,7 @@ export function prunePresence(paths: Paths, space: Space): number {
           "update-index",
           "--add",
           "--cacheinfo",
-          `100644,${blob},presence/${authorSlug(entry.author)}.md`,
+          `100644,${blob},${presencePrefix(space)}${authorSlug(entry.author)}.md`,
         ],
         { cwd: space.dir, env },
       );

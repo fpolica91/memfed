@@ -14,6 +14,7 @@ export function ensureSpaceClone(ctx: Ctx, name: string): Space {
   if (!existsSync(dir)) {
     console.log(pc.dim(`cloning missing space '${name}' from ${entry.url}…`));
     git(["clone", "-q", entry.url, dir]);
+    if (entry.root) git(["sparse-checkout", "set", entry.root], { cwd: dir, check: false });
   }
   return loadSpace(ctx.paths, ctx.config, name);
 }

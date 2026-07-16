@@ -7,7 +7,7 @@ import { appendAudit } from "../core/audit.js";
 import { parseRecord, serializeRecord } from "../core/record.js";
 import type { MemoryRecord } from "../core/types.js";
 import { git, pushMainWithRetry, revParse } from "./exec.js";
-import type { Space } from "./space.js";
+import { recordRelPath, type Space } from "./space.js";
 
 /**
  * Forge-independent PR flow (RFC §7.5): proposals are branches named
@@ -37,10 +37,15 @@ export function pushProposalBranch(ctx: Ctx, record: MemoryRecord, space: Space)
   const env = { GIT_INDEX_FILE: tmpIndex };
   try {
     git(["read-tree", base], { cwd: space.dir, env });
-    git(["update-index", "--add", "--cacheinfo", `100644,${blob},records/${record.fm.id}.md`], {
-      cwd: space.dir,
-      env,
-    });
+    git(
+      [
+        "update-index",
+        "--add",
+        "--cacheinfo",
+        `100644,${blob},${recordRelPath(space, record.fm.id)}`,
+      ],
+      { cwd: space.dir, env },
+    );
     const tree = git(["write-tree"], { cwd: space.dir, env }).stdout.trim();
     const title = record.fm.title.replace(/\s+/g, " ").slice(0, 72);
     const commit = git(
@@ -83,7 +88,7 @@ export function listRemoteProposals(space: Space): RemoteProposal[] {
 /** Read the proposed record's content out of the proposal commit. */
 export function readProposalRecord(space: Space, proposal: RemoteProposal): MemoryRecord {
   git(["fetch", "-q", "origin", `${PROPOSAL_REF_PREFIX}${proposal.recordId}`], { cwd: space.dir });
-  const text = git(["show", `${proposal.sha}:records/${proposal.recordId}.md`], {
+  const text = git(["show", `${proposal.sha}:${recordRelPath(space, proposal.recordId)}`], {
     cwd: space.dir,
   }).stdout;
   return parseRecord(text, `proposal ${proposal.recordId}`);

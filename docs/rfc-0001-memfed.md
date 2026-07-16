@@ -203,9 +203,11 @@ layout_version: 1
 
 Whoever can read the repo reads the space. Whoever can push to `main` can publish directly (under `publish: direct`) and can approve proposals (under `publish: pr`). Recommended for org spaces: branch protection on `main`, CODEOWNERS on `.memfed/**` (manifest changes are security-sensitive — §16, T9).
 
-### 6.3 Dedicated repos (v1 default)
+### 6.3 Dedicated repos (default) and in-repo mode (`root:`)
 
-v1 spaces are dedicated memory repos, not directories inside code repos: the ACL is the whole permission model, org spaces can span many projects, publishes don't trigger code CI or pollute code history. The `root:` manifest key is reserved so a future in-repo mode never bumps `layout_version`.
+The default space is a dedicated memory repo: the ACL is the whole permission model, org spaces can span many projects, publishes don't trigger code CI or pollute code history.
+
+**In-repo mode** puts a space inside an existing code repo at a subdirectory (`root: .memory`), inheriting the code repo's exact audience — ideal for private team monorepos. Rules: memfed never touches files outside `root` (no README, no workflow files — add the lint job to the host CI yourself); `space init --root` works on an existing remote; `space add` auto-discovers the root by scanning for `.memfed/space.yaml` (or takes `--root`); managed clones use a sparse checkout so joining a space inside a monorepo doesn't materialize the monorepo. Trade-offs to know: publishes create commits in the code repo's history and trigger its CI, and the space cannot outlive or out-scope the code repo. `layout_version` is unchanged — the layout under `root` is identical to a dedicated repo's.
 
 ### 6.4 Scope = publication
 
@@ -384,8 +386,8 @@ memfed supersede <old> --with <new>
 memfed promote <id> --to ORG_SPACE           # project → org, full pipeline re-runs
 memfed quarantine <id>                       # local kill-switch: exclude from briefs/projections
 memfed sync [SPACE] [--accept-rewrite]       # fetch/rebase/push + reindex + re-render
-memfed space init <git-url> --name N [--kind K] [--policy direct|pr]
-memfed space add <git-url> --name N          # join an existing space
+memfed space init <git-url> --name N [--kind K] [--policy direct|pr] [--root SUBDIR]
+memfed space add <git-url> [--name N] [--root SUBDIR]   # join; in-repo roots auto-discovered
 memfed space list
 memfed space prune-presence --space N        # squash presence branch history
 memfed presence on|off|auto|show [--space N]
@@ -435,7 +437,6 @@ Exit codes: `0` success · `1` error · `2` redaction BLOCK.
 ## 17. Open questions / future work
 
 - Embedding search behind the same `mem_search` interface (must not violate INV-1 — vectors of private records never leave the machine).
-- In-repo spaces (`root:` key) with sparse checkout for monorepos.
 - A tiny self-hostable relay for fresher presence (opt-in, metadata-only) — only if "recent activity" proves insufficient in practice.
 - Encrypted spaces (git-crypt/age) if a concrete constituency materializes — currently rejected (§1.3).
 - Codex/Crush capture hooks (beyond MCP) once their hook-trust stories stabilize.
